@@ -1,5 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
-
+import { useRef } from "react";
+import { useEditorStore } from "./hooks/useEditorStore";
 import type { EditorElement } from "./types/editor";
 
 interface Props {
@@ -11,28 +12,71 @@ export default function DraggableElement({ element }: Props) {
     id: element.id
   });
 
+  const updateText = useEditorStore((s) => s.updateText);
+  const updateImage = useEditorStore((s) => s.updateImage);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className="absolute cursor-move"
+      className="w-full bg-white rounded shadow"
       style={{
-        left: element.x,
-        top: element.y,
-        position: "absolute",
         transform: transform
-          ? `translate(${transform.x}px, ${transform.y}px)`
+          ? `translateY(${transform.y}px)`
           : "none"
       }}
     >
-      {element.type === "text" && (
-        <div className="p-1 text-xl">{element.value}</div>
-      )}
+      {/* 🔹 Drag Handle */}
+      <div
+        {...listeners}
+        {...attributes}
+        className="cursor-grab bg-gray-100 px-3 py-2 text-sm text-gray-600 select-none"
+      >
+        ⠿ Drag
+      </div>
 
-      {element.type === "image" && (
-        <img src={element.src} alt="element" className="w-32 h-auto" />
-      )}
+      {/* 🔹 Content Area (NO drag here) */}
+      <div className="p-4">
+        {element.type === "text" && (
+          <div
+            contentEditable
+            suppressContentEditableWarning
+            className="outline-none border border-transparent focus:border-blue-400"
+            onBlur={(e) =>
+              updateText(element.id, e.currentTarget.innerText)
+            }
+          >
+            {element.value}
+          </div>
+        )}
+
+        {element.type === "image" && (
+          <>
+            <img
+              src={element.src}
+              className="w-full h-auto cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            />
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = () =>
+                  updateImage(element.id, reader.result as string);
+                reader.readAsDataURL(file);
+              }}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }

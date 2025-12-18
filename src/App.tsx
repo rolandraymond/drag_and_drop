@@ -1,36 +1,48 @@
-import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCenter,
+  type DragEndEvent
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+
 import Sidebar from "./components/Sidebar";
 import Canvas from "./components/Canvas";
-import { useEditorStore } from "./hooks/useEditorStore";
+import SaveButton from "./components/SaveButton";
 import DraggableElement from "./DraggableElement";
+import { useEditorStore } from "./hooks/useEditorStore";
 
 export default function App() {
-  const elements = useEditorStore((state) => state.elements);
-  const updatePosition = useEditorStore((state) => state.updatePosition);
+  const elements = useEditorStore((s) => s.elements);
+  const reorderElements = useEditorStore((s) => s.reorderElements);
 
- const handleDragEnd = (event: DragEndEvent) => {
-  const { active, delta } = event;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  const element = elements.find((el) => el.id === active.id);
-  if (!element) return;
-
-  const newX = element.x + delta.x;
-  const newY = element.y + delta.y;
-
-  updatePosition(element.id, newX, newY);
-};
-
+    reorderElements(active.id as string, over.id as string);
+  };
 
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       <Sidebar />
-      <DndContext onDragEnd={handleDragEnd}>
-        <Canvas>
-          {elements.map((el) => (
-            <DraggableElement key={el.id} element={el} />
-          ))}
-        </Canvas>
-      </DndContext>
+
+      <div className="flex-1 relative">
+        <div className="absolute top-4 right-4 z-10">
+          <SaveButton />
+        </div>
+
+        <DndContext
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleDragEnd}
+        >
+          <Canvas>
+            {elements.map((el) => (
+              <DraggableElement key={el.id} element={el} />
+            ))}
+          </Canvas>
+        </DndContext>
+      </div>
     </div>
   );
 }

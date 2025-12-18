@@ -1,20 +1,20 @@
-import { useEditorStore } from "./../hooks/useEditorStore";
+import { useEditorStore } from "../hooks/useEditorStore";
 
 export default function Sidebar() {
-  const addElement = useEditorStore((state) => state.addElement);
+  const addElement = useEditorStore((s) => s.addElement);
 
   return (
-    <div className="w-48 bg-white border-r p-4 space-y-3">
+    <div className="w-56 bg-white border-r p-4 space-y-3">
       <button
         onClick={() => addElement("text")}
-        className="w-full p-2 bg-blue-500 text-white"
+        className="w-full bg-blue-600 text-white py-2 rounded"
       >
         Add Text
       </button>
 
       <button
         onClick={() => addElement("image")}
-        className="w-full p-2 bg-green-500 text-white"
+        className="w-full bg-green-600 text-white py-2 rounded"
       >
         Add Image
       </button>

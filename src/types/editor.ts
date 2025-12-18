@@ -3,8 +3,6 @@ export type ElementType = "text" | "image";
 export interface BaseElement {
   id: string;
   type: ElementType;
-  x: number;
-  y: number;
 }
 
 export interface TextElement extends BaseElement {
@@ -18,3 +16,9 @@ export interface ImageElement extends BaseElement {
 }
 
 export type EditorElement = TextElement | ImageElement;
+
+export interface PageSchema {
+  id: string;
+  elements: EditorElement[];
+  updatedAt: string;
+}
