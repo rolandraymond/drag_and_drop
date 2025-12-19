@@ -4,14 +4,20 @@ import {
   type DragEndEvent
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { Routes, Route } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
 import Canvas from "./components/Canvas";
 import SaveButton from "./components/SaveButton";
 import DraggableElement from "./DraggableElement";
+import Login from "./components/Login";
+import Register from "./components/Register";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
+import AboutPage from "./components/AboutPage";
 import { useEditorStore } from "./hooks/useEditorStore";
 
-export default function App() {
+const MainApp = () => {
   const elements = useEditorStore((s) => s.elements);
   const reorderElements = useEditorStore((s) => s.reorderElements);
 
@@ -44,5 +50,18 @@ export default function App() {
         </DndContext>
       </div>
     </div>
+  );
+};
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/About" element={<AboutPage />} />
+      <Route path="/" element={<MainApp />} />
+    </Routes>
   );
 }
