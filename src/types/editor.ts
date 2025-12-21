@@ -1,21 +1,30 @@
-export type ElementType = "text" | "image";
+export type ElementType = 'text' | 'imageQuestion' | 'question';
 
 export interface BaseElement {
   id: string;
   type: ElementType;
+  x: number;
+  y: number;
+}
+export interface ImageQuestionElement extends BaseElement {
+  type: 'imageQuestion';
+  image: string;
+  question: string;
+  answer: string;
 }
 
 export interface TextElement extends BaseElement {
-  type: "text";
+  type: 'text';
   value: string;
 }
 
-export interface ImageElement extends BaseElement {
-  type: "image";
-  src: string;
+export interface QuestionElement extends BaseElement {
+  type: 'question';
+  question: string;
+  answer: string;
 }
 
-export type EditorElement = TextElement | ImageElement;
+export type EditorElement = TextElement | ImageQuestionElement | QuestionElement;
 
 export interface PageSchema {
   id: string;

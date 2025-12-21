@@ -1,64 +1,176 @@
-import { create } from "zustand";
-import type { EditorElement, PageSchema } from "../types/editor";
-import { uid } from "../utils/uid";
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import type { EditorElement, ElementType } from '../types/editor';
+import type { PageSchemaV1 } from '../types/schema';
+import { uid } from '../utils/uid';
 
 interface EditorStore {
-    elements: EditorElement[];
+  elements: EditorElement[];
 
-    addElement: (type: "text" | "image") => void;
-    updateText: (id: string, value: string) => void;
-    updateImage: (id: string, src: string) => void;
-    reorderElements: (activeId: string, overId: string) => void;
+  meta: {
+    name: string;
+    description?: string;
+    author?: string;
+  };
 
-    buildSchema: () => PageSchema;
+  updateMetaName: (name: string) => void;
+  updateMetaDescription: (description: string) => void;
+  updateMetaAuthor: (author: string) => void;
+
+  clearAll: () => void;
+  addElement: (type: ElementType) => void;
+  buildSchema: () => PageSchemaV1;
+
+  updateText: (id: string, value: string) => void;
+  updateQuestion: (id: string, value: string) => void;
+  updateAnswer: (id: string, value: string) => void;
+  updateImageQuestionImage: (id: string, image: string) => void;
+
+  reorderElements: (activeId: string, overId: string) => void;
+  deleteElement: (id: string) => void;
+  updatePosition: (id: string, dx: number, dy: number) => void;
 }
 
-export const useEditorStore = create<EditorStore>((set, get) => ({
-    elements: [],
+export const useEditorStore = create<EditorStore>()(
+  persist(
+    (set, get) => ({
+      /* ---------- STATE ---------- */
+      elements: [],
 
-    addElement: (type) =>
+      meta: {
+        name: 'Untitled Page',
+        description: '',
+        author: '',
+        createdAt: Date.now(),
+      },
+
+      /* ---------- META UPDATES ---------- */
+      updateMetaName: (name) =>
         set((state) => ({
-            elements: [
-                ...state.elements,
-                type === "text"
-                    ? { id: uid(), type: "text", value: "write text here" }
-                    : { id: uid(), type: "image", src: "/placeholder.png" }
-            ]
+          meta: { ...state.meta, name },
         })),
 
-    updateText: (id, value) =>
+      updateMetaDescription: (description) =>
         set((state) => ({
-            elements: state.elements.map((el) =>
-                el.id === id && el.type === "text"
-                    ? { ...el, value }
-                    : el
-            )
+          meta: { ...state.meta, description },
         })),
 
-    updateImage: (id, src) =>
+      updateMetaAuthor: (author) =>
         set((state) => ({
-            elements: state.elements.map((el) =>
-                el.id === id && el.type === "image"
-                    ? { ...el, src }
-                    : el
-            )
+          meta: { ...state.meta, author },
         })),
 
-    reorderElements: (activeId, overId) =>
+      /* ---------- ELEMENT CRUD ---------- */
+      addElement: (type) =>
+        set((state) => ({
+          elements: [
+            ...state.elements,
+            type === 'imageQuestion'
+              ? {
+                  id: uid(),
+                  type: 'imageQuestion',
+                  x: 0,
+                  y: 0,
+                  image: '',
+                  question: '',
+                  answer: '',
+                }
+              : type === 'question'
+              ? {
+                  id: uid(),
+                  type: 'question',
+                  x: 0,
+                  y: 0,
+                  question: '',
+                  answer: '',
+                }
+              : {
+                  id: uid(),
+                  type: 'text',
+                  x: 0,
+                  y: 0,
+                  value: 'New Text',
+                },
+          ],
+        })),
+
+      updateText: (id, value) =>
+        set((state) => ({
+          elements: state.elements.map((el) =>
+            el.id === id && el.type === 'text' ? { ...el, value } : el,
+          ),
+        })),
+
+      updateQuestion: (id, value) =>
+        set((state) => ({
+          elements: state.elements.map((el) =>
+            el.id === id && (el.type === 'question' || el.type === 'imageQuestion')
+              ? { ...el, question: value }
+              : el,
+          ),
+        })),
+
+      updateAnswer: (id, value) =>
+        set((state) => ({
+          elements: state.elements.map((el) =>
+            el.id === id && (el.type === 'question' || el.type === 'imageQuestion')
+              ? { ...el, answer: value }
+              : el,
+          ),
+        })),
+
+      updateImageQuestionImage: (id, image) =>
+        set((state) => ({
+          elements: state.elements.map((el) =>
+            el.id === id && el.type === 'imageQuestion' ? { ...el, image } : el,
+          ),
+        })),
+
+      reorderElements: (activeId, overId) =>
         set((state) => {
-            const oldIndex = state.elements.findIndex(e => e.id === activeId);
-            const newIndex = state.elements.findIndex(e => e.id === overId);
+          const oldIndex = state.elements.findIndex((e) => e.id === activeId);
+          const newIndex = state.elements.findIndex((e) => e.id === overId);
+          if (oldIndex === -1 || newIndex === -1) return state;
 
-            const updated = [...state.elements];
-            const [moved] = updated.splice(oldIndex, 1);
-            updated.splice(newIndex, 0, moved);
+          const updated = [...state.elements];
+          const [moved] = updated.splice(oldIndex, 1);
+          updated.splice(newIndex, 0, moved);
 
-            return { elements: updated };
+          return { elements: updated };
         }),
 
-    buildSchema: () => ({
-        id: uid(),
-        elements: get().elements,
-        updatedAt: new Date().toISOString()
-    })
-}));
+      deleteElement: (id) =>
+        set((state) => ({
+          elements: state.elements.filter((el) => el.id !== id),
+        })),
+
+      updatePosition: (id, dx, dy) =>
+        set((state) => ({
+          elements: state.elements.map((el) =>
+            el.id === id ? { ...el, x: el.x + dx, y: el.y + dy } : el,
+          ),
+        })),
+
+      clearAll: () => set({ elements: [] }),
+
+      /* ---------- SCHEMA ---------- */
+      buildSchema: (): PageSchemaV1 => {
+        const { elements, meta } = get();
+
+        return {
+          version: '1.0' as const,
+          meta,
+          elements: [...elements],
+        };
+      },
+    }),
+    {
+      name: 'dragdrop-editor-v1',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        elements: state.elements,
+        meta: state.meta,
+      }),
+    },
+  ),
+);
