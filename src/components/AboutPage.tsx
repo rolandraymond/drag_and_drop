@@ -1,5 +1,7 @@
 import React from 'react';
+import Navbar from './Navbar';
 import TeamMemberCard from './TeamMemberCard';
+import TypingHeading from './TypingHeading';
 
 interface TeamMember {
   name: string;
@@ -14,6 +16,7 @@ interface TeamMember {
 }
 
 const AboutPage: React.FC = () => {
+
   const teamMembers: TeamMember[] = [
     {
       name: 'Shehab Abdelaziz',
@@ -66,39 +69,50 @@ const AboutPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Company Introduction */}
-        <div className="bg-[#F1F5F4] rounded-2xl shadow-lg p-10 mb-16">
-          <div className="text-center">
-            <h1 className="text-5xl font-extrabold text-[#142F32] mb-6">About Learning Builder</h1>
-            <div className="w-20 h-1 bg-[#E3FFCC] mx-auto mb-8"></div>
-            <p className="text-lg text-[#777C90] max-w-4xl mx-auto leading-relaxed">
-              <span className="text-[#142F32] font-semibold">Learning Builder</span> empowers educators and learners through innovative, collaborative learning experiences. Our mission is to inspire creativity, foster critical thinking, and encourage lifelong learning. We believe in hands-on learning, teamwork, and practical solutions, creating engaging educational platforms that make learning both effective and enjoyable. At Learning Builder, every project reflects our commitment to quality, innovation, and the growth of our learners and partners alike.
-            </p>
-          </div>
-        </div>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-[#282930] py-16 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto space-y-16">
 
-        {/* Team Section */}
-        <div className="bg-[#F9FAFB] rounded-2xl shadow-lg p-10 mb-12">
-          <h2 className="text-4xl font-bold text-[#142F32] text-center mb-6">Meet Our Team</h2>
-          <div className="w-16 h-0.5 bg-[#E3FFCC] mx-auto mb-10"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {teamMembers.map((member, index) => (
-              <TeamMemberCard
-                key={index}
-                name={member.name}
-                bio={member.bio}
-                image={member.image}
-                socialLinks={member.socialLinks}
-                email={member.email}
-                phone={member.phone}
-              />
-            ))}
-          </div>
+      {/* About Section */}
+      <div className="bg-[#F0F0F0] rounded-3xl shadow-2xl  mt-5 p-12 md:p-16">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold font-mono text-[#142F32] mb-6 min-h-[60px] flex items-center justify-center">
+            <TypingHeading text="About Luild" />
+          </h1>
+          <div className="w-28 h-1 bg-[#142F32] mx-auto mb-8 rounded-full"></div>
+          <p className="text-lg md:text-xl text-[#4A4D55] max-w-5xl mx-auto leading-relaxed">
+  <span className="text-[#142F32] font-semibold">Luild</span> empowers educators, creators, and learners through <span className="text-[#142F32] font-semibold">innovative, collaborative learning experiences</span>. Our mission is to inspire <span className="text-[#142F32] font-semibold">creativity</span>, foster <span className="text-[#142F32] font-semibold">critical thinking</span>, and encourage lifelong learning.  
+  <span className="text-[#142F32] font-semibold">Hands-on learning, teamwork, and practical solutions</span> are at our core, creating engaging educational platforms that make learning effective, enjoyable, and impactful. Luild transforms ideas into actionable learning journeys, helping creators deliver <span className="text-[#142F32] font-semibold">intelligent, interactive, and personalized education</span>.
+</p>
+
+        </div>
+      </div>
+
+      {/* Team Section */}
+      <div className="bg-[#E3FFCC]/10 rounded-3xl shadow-2xl p-12 md:p-16">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold font-mono text-[#E3FFCC] text-center mb-6 min-h-[50px] flex items-center justify-center">
+          <TypingHeading text="Meet Our Team" />
+        </h2>
+        <div className="w-24 h-1 bg-[#E3FFCC] mx-auto mb-12 rounded-full"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-12">
+          {teamMembers.map((member, index) => (
+            <TeamMemberCard
+              key={index}
+              name={member.name}
+              bio={member.bio}
+              image={member.image}
+              socialLinks={member.socialLinks}
+              email={member.email}
+              phone={member.phone}
+              className="bg-[#F0F0F0] hover:bg-[#F5F5F5] rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 p-6 flex flex-col items-center text-center border-b-4 border-[#E3FFCC]/40"
+            />
+          ))}
         </div>
       </div>
     </div>
+  </div>
+    </>
   );
 };
 

@@ -8,6 +8,8 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import AboutPage from './components/AboutPage';
 import Canvas from './components/Canvas';
 import ForgotPassword from './components/ForgotPassword';
+import Home from './components/Home';
+import HowItWorks from './components/HowItWorks';
 import Login from './components/Login';
 import Register from './components/Register';
 import ResetPassword from './components/ResetPassword';
@@ -98,7 +100,9 @@ export default function App() {
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/reset-password' element={<ResetPassword />} />
         <Route path='/About' element={<AboutPage />} />
-        <Route path='/' element={<MainApp />} />
+        <Route path='/how-it-works' element={<HowItWorks />} />
+        <Route path='/editor' element={<MainApp />} />
+        <Route path='/' element={<Home />} />
       </Routes>
     </>
   );

@@ -13,12 +13,13 @@ interface TeamMemberCardProps {
   socialLinks: SocialLink[];
   email: string;
   phone: string;
+  className?: string;
 }
 
 
-const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ name, bio, image, socialLinks, email, phone }) => {
+const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ name, bio, image, socialLinks, email, phone, className }) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-b-4 border-[#E3FFCC]/40">
+    <div className={className}>
       <div className="flex flex-col items-center text-center">
         <div className="bg-[#E3FFCC]/10 rounded-full p-3 mb-6">
           <img

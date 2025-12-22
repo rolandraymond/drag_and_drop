@@ -65,7 +65,9 @@ const Login: React.FC = () => {
   return (
     <AuthLayout>
       <div>
+        <span className="block w-full bg-[#F9FAFB] text-[#142F32] px-4 py-2 rounded-md font-semibold text-center shadow-sm">
         <TypingHeading text="<Login />" />
+      </span>
         <p className="mt-2 text-center text-sm text-[#777C90]">
           Or{' '}
           <Link to="/register" className="font-medium text-[#142F32] hover:text-[#E3FFCC] transition-colors duration-200">
