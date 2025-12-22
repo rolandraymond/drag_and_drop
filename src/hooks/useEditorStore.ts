@@ -1,17 +1,15 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { EditorElement, ElementType } from '../types/editor';
-import type { PageSchemaV1 } from '../types/schema';
+import type { PageMeta, PageSchemaV1 } from '../types/schema';
 import { uid } from '../utils/uid';
 
 interface EditorStore {
   elements: EditorElement[];
 
-  meta: {
-    name: string;
-    description?: string;
-    author?: string;
-  };
+  meta: PageMeta;
+
+  setMeta: (meta: Partial<PageMeta>) => void;
 
   updateMetaName: (name: string) => void;
   updateMetaDescription: (description: string) => void;
@@ -43,7 +41,10 @@ export const useEditorStore = create<EditorStore>()(
         author: '',
         createdAt: Date.now(),
       },
-
+      setMeta: (partial) =>
+        set((state) => ({
+          meta: { ...state.meta, ...partial },
+        })),
       /* ---------- META UPDATES ---------- */
       updateMetaName: (name) =>
         set((state) => ({

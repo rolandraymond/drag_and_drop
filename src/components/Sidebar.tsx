@@ -1,5 +1,6 @@
 import { toast } from 'react-toastify';
 import { useEditorStore } from '../hooks/useEditorStore';
+import MetadataForm from './MetadataForm';
 
 export default function Sidebar() {
   const addElement = useEditorStore((s) => s.addElement);
@@ -20,6 +21,7 @@ export default function Sidebar() {
 
   return (
     <div className='h-full p-4 space-y-4 bg-white'>
+      <MetadataForm />
       <div className='text-left'>
         <div className='text-sm text-gray-500'>Elements</div>
         <div className='text-2xl font-semibold text-gray-900'>{count}</div>
