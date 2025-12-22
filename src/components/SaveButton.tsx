@@ -2,13 +2,19 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { downloadTextFile } from '../export/downloadTextFile';
 import { generateReactTsx } from '../export/generateReactTsx';
+import { generateSchemaJson } from '../export/generateSchemaJson';
+import { saveDesignSchema } from '../api/designs';
+import { saveDesign } from '../api/saveDesign';
+
+
+
 import { useEditorStore } from '../hooks/useEditorStore';
 import Popup from './Popup';
 export default function SaveButton() {
   const elements = useEditorStore((s) => s.elements);
   const [showPopup, setShowPopup] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!elements || elements.length === 0) {
       toast.error('Nothing to export yet');
       return;
@@ -25,9 +31,15 @@ export default function SaveButton() {
         toast.warning(warning);
       });
 
-      downloadTextFile(result.fileName, result.code);
+       const schema = generateSchemaJson(elements, { title: 'Generated Page' });
 
-      toast.success('React TSX file exported successfully');
+        downloadTextFile(result.fileName, result.code);
+        // downloadTextFile('page.schema.json', JSON.stringify(schema, null, 2));
+
+          await saveDesignSchema(schema);
+          await saveDesign(schema);
+
+      toast.success('Exported TSX + JSON successfully');
       setShowPopup(true);
 
       console.log('EXPORTED TSX CODE:\n', result.code);
