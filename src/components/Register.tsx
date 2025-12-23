@@ -98,11 +98,6 @@ const Register: React.FC = () => {
             sign in to existing account
           </Link>
         </p>
-        {errors.general && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
-            {errors.general}
-          </div>
-        )}
       </div>
       {success ? (
         <div className="mt-8">
@@ -134,7 +129,7 @@ const Register: React.FC = () => {
             error={errors.email}
             name="email"
             required
-          />
+            />
           <Input
             type="password"
             label="Password"
@@ -144,7 +139,7 @@ const Register: React.FC = () => {
             error={errors.password}
             name="password"
             required
-          />
+            />
           <Input
             type="password"
             label="Confirm Password"
@@ -154,12 +149,17 @@ const Register: React.FC = () => {
             error={errors.confirmPassword}
             name="confirmPassword"
             required
-          />
+            />
         </div>
         <Button type="submit" loading={loading}>
           Create Account
         </Button>
       </form>
+      )}
+      {errors.general && (
+        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+          {errors.general}
+        </div>
       )}
     </AuthLayout>
   );
