@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import type { AxiosError } from 'axios';
+import { useAuth } from '../hooks/useAuth';
 import AuthLayout from './AuthLayout';
 import Input from './Input';
 import Button from './Button';
@@ -7,6 +9,8 @@ import TypingHeading from './TypingHeading';
 
 
 const Login: React.FC = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -53,10 +57,20 @@ const Login: React.FC = () => {
     }
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Login successful', formData);
-    } catch (error) {
-      console.error('Login failed', error);
+      await login(formData.email, formData.password);
+      navigate('/');
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError;
+      const apiError = axiosError.response?.data as any;
+      if (apiError?.errors) {
+        const fieldErrors: { [key: string]: string } = {};
+        Object.entries(apiError.errors).forEach(([field, messages]) => {
+          fieldErrors[field] = Array.isArray(messages) ? messages[0] : messages;
+        });
+        setErrors(fieldErrors);
+      } else {
+        setErrors({ general: apiError?.message || 'Login failed. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -109,6 +123,11 @@ const Login: React.FC = () => {
           Sign In
         </Button>
       </form>
+            {errors.general && (
+              <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                {errors.general}
+              </div>
+            )}
     </AuthLayout>
   );
 };

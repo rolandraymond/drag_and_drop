@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { user, logout, loading } = useAuth();
+
+  if (loading) return null;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -12,6 +17,11 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    setIsDropdownOpen(false);
+  };
 
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-[#142F32] shadow-lg' : 'bg-transparent'}`}>
@@ -39,10 +49,43 @@ const Navbar = () => {
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-[#E3FFCC] hover:text-white transition-colors duration-300">Login</Link>
-            <Link to="/editor" className="bg-[#E3FFCC] text-[#142F32] px-4 py-2 rounded-md font-semibold hover:bg-white hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
-              Let's Build Your Course
-            </Link>
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="text-[#E3FFCC] hover:text-white transition-colors duration-300 flex items-center space-x-2"
+                >
+                  <span className="font-mono">{user.name}</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#282930] rounded-md shadow-lg py-1 z-10 border border-[rgba(247,247,247,0.10)]">
+                    <Link
+                      to="/account"
+                      className="block px-4 py-2 text-sm text-[#E3FFCC] hover:bg-[rgba(247,247,247,0.10)]"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      Account
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-[#E3FFCC] hover:bg-[rgba(247,247,247,0.10)]"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link to="/login" className="text-[#E3FFCC] hover:text-white transition-colors duration-300">Login</Link>
+                <Link to="/register" className="bg-[#E3FFCC] text-[#142F32] px-4 py-2 rounded-md font-semibold hover:bg-white hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                  Register
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

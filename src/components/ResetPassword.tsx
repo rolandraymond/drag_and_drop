@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import type { AxiosError } from 'axios';
+import AuthService from '../api/auth';
 import AuthLayout from './AuthLayout';
 import Input from './Input';
 import Button from './Button';
@@ -7,9 +9,12 @@ import TypingHeading from './TypingHeading';
 
 
 const ResetPassword: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
+  const email = searchParams.get('email') || '';
   const [formData, setFormData] = useState({
     password: '',
-    confirmPassword: ''
+    password_confirmation: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -37,10 +42,10 @@ const ResetPassword: React.FC = () => {
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData.password_confirmation) {
+      newErrors.password_confirmation = 'Please confirm your password';
+    } else if (formData.password !== formData.password_confirmation) {
+      newErrors.password_confirmation = 'Passwords do not match';
     }
     return newErrors;
   };
@@ -52,13 +57,26 @@ const ResetPassword: React.FC = () => {
       setErrors(validationErrors);
       return;
     }
+    if (!token) {
+      setErrors({ general: 'Invalid reset token.' });
+      return;
+    }
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Password reset successful');
+      await AuthService.resetPassword({ token, email, password: formData.password, password_confirmation: formData.password_confirmation });
       setSuccess(true);
-    } catch (error) {
-      console.error('Password reset failed', error);
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError;
+      const apiError = axiosError.response?.data as any;
+      if (apiError?.errors) {
+        const fieldErrors: { [key: string]: string } = {};
+        Object.entries(apiError.errors).forEach(([field, messages]) => {
+          fieldErrors[field] = Array.isArray(messages) ? messages[0] : messages;
+        });
+        setErrors(fieldErrors);
+      } else {
+        setErrors({ general: apiError?.message || 'Password reset failed. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -67,10 +85,17 @@ const ResetPassword: React.FC = () => {
   return (
     <AuthLayout>
       <div>
+        <span className="block w-full bg-[#F9FAFB] text-[#142F32] px-4 py-2 rounded-md font-semibold text-center shadow-sm">
         <TypingHeading text="auth.resetPassword()" />
+        </span>
         <p className="mt-2 text-center text-sm text-[#777C90]">
           Enter your new password below.
         </p>
+        {errors.general && (
+          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+            {errors.general}
+          </div>
+        )}
       </div>
       {success ? (
         <div className="mt-8">
@@ -102,10 +127,10 @@ const ResetPassword: React.FC = () => {
               type="password"
               label="Confirm New Password"
               placeholder="Confirm new password"
-              value={formData.confirmPassword}
+              value={formData.password_confirmation}
               onChange={handleChange}
-              error={errors.confirmPassword}
-              name="confirmPassword"
+              error={errors.password_confirmation}
+              name="password_confirmation"
               required
             />
           </div>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { AxiosError } from 'axios';
+import AuthService from '../api/auth';
 import AuthLayout from './AuthLayout';
 import Input from './Input';
 import Button from './Button';
@@ -35,13 +37,12 @@ const ForgotPassword: React.FC = () => {
     }
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Password reset email sent to', email);
+      await AuthService.forgotPassword({ email });
       setSuccess(true);
-    } catch (error) {
-      console.error('Failed to send reset email', error);
-      setError('Failed to send reset email. Please try again.');
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError;
+      const apiError = axiosError.response?.data as any;
+      setError(apiError?.message || 'Failed to send reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,9 @@ const ForgotPassword: React.FC = () => {
   return (
     <AuthLayout>
       <div>
+        <span className="block w-full bg-[#F9FAFB] text-[#142F32] px-4 py-2 rounded-md font-semibold text-center shadow-sm">
         <TypingHeading text="auth.forgotPassword()" />
+      </span>
         <p className="mt-2 text-center text-sm text-[#777C90]">
           Enter your email address and we'll send you a link to reset your password.
         </p>
