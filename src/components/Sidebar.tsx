@@ -5,7 +5,12 @@ import MetadataForm from './MetadataForm';
 export default function Sidebar() {
   const addElement = useEditorStore((s) => s.addElement);
   const clearAll = useEditorStore((s) => s.clearAll);
-  const count = useEditorStore((s) => s.elements.length);
+
+  const pages = useEditorStore((s) => s.pages);
+  const activePageId = useEditorStore((s) => s.activePageId);
+
+  const activePage = pages.find((p) => p.id === activePageId);
+  const count = activePage?.elements.length ?? 0;
 
   const handleClear = () => {
     const ok = window.confirm('Delete all elements? This cannot be undone.');
@@ -22,6 +27,7 @@ export default function Sidebar() {
   return (
     <div className='h-full p-4 space-y-4 bg-white'>
       <MetadataForm />
+
       <div className='text-left'>
         <div className='text-sm text-gray-500'>Elements</div>
         <div className='text-2xl font-semibold text-gray-900'>{count}</div>
@@ -63,12 +69,7 @@ export default function Sidebar() {
 
         <hr className='border-gray-200 my-2' />
 
-        <button
-          type='button'
-          onClick={handleClear}
-          className={`${baseBtn} bg-red-600 text-white`}
-          aria-label='Clear all elements'
-        >
+        <button type='button' onClick={handleClear} className={`${baseBtn} bg-red-600 text-white`}>
           Clear All
         </button>
       </div>

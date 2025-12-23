@@ -1,18 +1,23 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { saveDesignSchema } from '../api/designs';
+import { saveDesign } from '../api/saveDesign';
 import { downloadTextFile } from '../export/downloadTextFile';
 import { generateReactTsx } from '../export/generateReactTsx';
 import { generateSchemaJson } from '../export/generateSchemaJson';
-import { saveDesignSchema } from '../api/designs';
-import { saveDesign } from '../api/saveDesign';
-
-
+import { toComponentName } from '../utils/toComponentName';
 
 import { useEditorStore } from '../hooks/useEditorStore';
 import Popup from './Popup';
 export default function SaveButton() {
-  const elements = useEditorStore((s) => s.elements);
   const [showPopup, setShowPopup] = useState(false);
+  const meta = useEditorStore((s) => s.meta);
+  const componentName = meta.name?.trim() ? toComponentName(meta.name) : 'QuizPage';
+const pages = useEditorStore((s) => s.pages);
+const activePageId = useEditorStore((s) => s.activePageId);
+
+const activePage = pages.find((p) => p.id === activePageId);
+const elements = activePage?.elements ?? [];
 
   const handleSave = async () => {
     if (!elements || elements.length === 0) {
@@ -22,8 +27,9 @@ export default function SaveButton() {
 
     try {
       const result = generateReactTsx(elements, {
-        componentName: 'Page',
+        componentName,
         wrapperClassName: 'max-w-3xl mx-auto px-6 py-8 space-y-6',
+        
       });
 
       // Show warnings (but still export)
@@ -31,15 +37,17 @@ export default function SaveButton() {
         toast.warning(warning);
       });
 
-       const schema = generateSchemaJson(elements, { title: 'Generated Page' });
+      const schema = generateSchemaJson(elements, {
+        title: meta.name || 'Quiz',
+      });
 
-        downloadTextFile(result.fileName, result.code);
-        // downloadTextFile('page.schema.json', JSON.stringify(schema, null, 2));
+      downloadTextFile(result.fileName, result.code);
+      // downloadTextFile('page.schema.json', JSON.stringify(schema, null, 2));
 
-          await saveDesignSchema(schema);
-          await saveDesign(schema);
+      await saveDesignSchema(schema);
+      await saveDesign(schema);
 
-      toast.success('Exported TSX + JSON successfully');
+      toast.success('Exported TSX successfully');
       setShowPopup(true);
 
       console.log('EXPORTED TSX CODE:\n', result.code);

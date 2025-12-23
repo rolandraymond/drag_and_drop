@@ -96,6 +96,7 @@ export function generateReactTsx(
   const componentName = options.componentName || 'ExportedPage';
   const wrapperClassName = options.wrapperClassName || 'max-w-3xl mx-auto px-6 py-8 space-y-6';
 
+
   const body = elements
     .map((el) => elementToJsx(el, warnings, options))
     .filter(Boolean)
