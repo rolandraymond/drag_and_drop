@@ -13,6 +13,8 @@ export default function DraggableElement({ element }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: element.id,
   });
+  const updateInputLabel = useEditorStore((s) => s.updateInputLabel);
+  const updateInputPlaceholder = useEditorStore((s) => s.updateInputPlaceholder);
 
   const updateText = useEditorStore((s) => s.updateText);
   const updateQuestion = useEditorStore((s) => s.updateQuestion);
@@ -53,8 +55,13 @@ export default function DraggableElement({ element }: Props) {
                 ? 'Text'
                 : element.type === 'question'
                 ? 'Question'
-                : 'Image Question'}
+                : element.type === 'imageQuestion'
+                ? 'Image Question'
+                : element.type === 'input'
+                ? 'Input'
+                : 'Unknown'}
             </div>
+
             <div className='text-xs text-gray-500'>Drag to reorder</div>
           </div>
         </div>
@@ -63,7 +70,7 @@ export default function DraggableElement({ element }: Props) {
           type='button'
           onClick={() => {
             deleteElement(element.id);
-            toast.info("Element deleted");
+            toast.info('Element deleted');
           }}
           className='text-sm px-3 py-1.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50'
           aria-label='Delete item'
@@ -75,6 +82,31 @@ export default function DraggableElement({ element }: Props) {
 
       {/* Content */}
       <div className='p-5 space-y-4'>
+        {element.type === 'input' && (
+          <div className='space-y-4'>
+            <div>
+              <label className='text-sm font-medium text-gray-800'>Label</label>
+              <input
+                type='text'
+                defaultValue={element.label ?? 'Input'}
+                className='w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400'
+                placeholder='Input label'
+                onBlur={(e) => updateInputLabel(element.id, e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className='text-sm font-medium text-gray-800'>Placeholder</label>
+              <input
+                type='text'
+                defaultValue={element.placeholder ?? 'Type here...'}
+                className='w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400'
+                placeholder='Input placeholder'
+                onBlur={(e) => updateInputPlaceholder(element.id, e.target.value)}
+              />
+            </div>
+          </div>
+        )}
         {element.type === 'text' && (
           <div
             contentEditable
@@ -166,3 +198,4 @@ export default function DraggableElement({ element }: Props) {
     </div>
   );
 }
+

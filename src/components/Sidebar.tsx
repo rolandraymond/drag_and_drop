@@ -44,7 +44,6 @@ export default function Sidebar() {
         >
           Add Text
         </button>
-
         <button
           type='button'
           onClick={() => {
@@ -55,7 +54,6 @@ export default function Sidebar() {
         >
           Add Question
         </button>
-
         <button
           type='button'
           onClick={() => {
@@ -66,9 +64,7 @@ export default function Sidebar() {
         >
           Add Image Question
         </button>
-
         <hr className='border-gray-200 my-2' />
-
         <button type='button' onClick={handleClear} className={`${baseBtn} bg-red-600 text-white`}>
           Clear All
         </button>

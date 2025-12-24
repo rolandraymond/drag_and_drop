@@ -1,4 +1,4 @@
-export type ElementType = 'text' | 'imageQuestion' | 'question';
+export type ElementType = 'text' | 'question' | 'imageQuestion' | 'input';
 
 export interface BaseElement {
   id: string;
@@ -24,10 +24,19 @@ export interface QuestionElement extends BaseElement {
   answer: string;
 }
 
-export type EditorElement = TextElement | ImageQuestionElement | QuestionElement;
-
+export interface PageMeta {
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
 export interface PageSchema {
   id: string;
   elements: EditorElement[];
   updatedAt: string;
 }
+export interface InputElement extends BaseElement {
+  type: 'input';
+  label?: string;
+  placeholder?: string;
+}
+export type EditorElement = TextElement | QuestionElement | ImageQuestionElement | InputElement;

@@ -83,6 +83,22 @@ function elementToJsx(el: EditorElement, warnings: string[], options: GenerateOp
 </div>
 `.trim();
   }
+  // INPUT
+  if (el.type === 'input') {
+    const label = escapeText(String(el.label ?? '').trim());
+    const placeholder = escapeText(String(el.placeholder ?? '').trim());
+
+    return `
+<div className="space-y-2">
+  ${label ? `<label className="text-sm font-medium text-gray-700">${label}</label>` : ''}
+  <input
+    type="text"
+    placeholder="${placeholder}"
+    className="w-full border rounded px-3 py-2"
+  />
+</div>
+`.trim();
+  }
 
   return assertNever(el);
 }

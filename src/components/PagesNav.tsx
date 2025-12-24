@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { useEditorStore } from '../hooks/useEditorStore';
 import ConfirmDialog from './ConfirmDialog';
-import ExportAllButton from './ExportAllButton';
 
 export default function PagesNav() {
   const pages = useEditorStore((s) => s.pages);
   const activePageId = useEditorStore((s) => s.activePageId);
+
   const setActivePage = useEditorStore((s) => s.setActivePage);
   const addPage = useEditorStore((s) => s.addPage);
+  const addInputPage = useEditorStore((s) => s.addInputPage);
   const renamePage = useEditorStore((s) => s.renamePage);
   const deletePage = useEditorStore((s) => s.deletePage);
 
@@ -18,68 +19,49 @@ export default function PagesNav() {
 
   return (
     <>
-      {/* ===== NAV BAR ===== */}
       <div className='flex items-center gap-2 border-b bg-gray-50 px-4 py-2 overflow-x-auto'>
-        {pages.map((page) => {
+        {pages.map((page, index) => {
           const isActive = page.id === activePageId;
-          const canDelete = pages.length > 1;
+          const displayName = page.name?.trim() ? page.name : `Page ${index + 1}`;
 
           return (
             <div key={page.id} className='flex items-center gap-1'>
-              {/* Rename */}
               {editingId === page.id ? (
                 <input
                   autoFocus
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   onBlur={() => {
-                    renamePage(page.id, value);
+                    renamePage(page.id, value.trim() || `Page ${index + 1}`);
                     setEditingId(null);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      renamePage(page.id, value);
+                      renamePage(page.id, value.trim() || `Page ${index + 1}`);
                       setEditingId(null);
                     }
                   }}
-                  className='px-2 py-1 rounded border text-sm'
+                  className='border px-2 py-1 text-sm rounded'
                 />
               ) : (
                 <button
                   onClick={() => setActivePage(page.id)}
                   onDoubleClick={() => {
                     setEditingId(page.id);
-                    setValue(page.name);
+                    setValue(page.name ?? '');
                   }}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium
-  transition-all duration-200 ease-out
-  ${
-    isActive
-      ? 'bg-white text-black border shadow-sm -translate-y-[1px]'
-      : 'text-gray-600 hover:bg-gray-200 hover:-translate-y-[1px]'
-  }`}
+                  className={`px-4 py-1 text-sm rounded transition ${
+                    isActive ? 'bg-white border shadow-sm' : 'text-gray-600 hover:bg-gray-200'
+                  }`}
                 >
-                  {page.name}
+                  {displayName}
                 </button>
               )}
 
-              {/* Delete trigger */}
               <button
-                type='button'
-                disabled={!canDelete}
-                onClick={() => {
-                  if (!canDelete) {
-                    toast.info('You need at least one page.');
-                    return;
-                  }
-                  setPageToDelete(page.id);
-                }}
-                className={`px-2 py-1.5 rounded-md border text-sm
-                  ${
-                    canDelete
-                      ? 'text-red-700 hover:bg-red-50 border-red-200'
-                      : 'opacity-40 cursor-not-allowed'
-                  }`}
+                onClick={() => setPageToDelete(page.id)}
+                disabled={pages.length === 1}
+                className='px-2 text-red-600 disabled:opacity-30'
                 title='Delete page'
               >
                 🗑
@@ -88,23 +70,25 @@ export default function PagesNav() {
           );
         })}
 
-        {/* Add Page */}
         <button
           onClick={addPage}
-          className='ml-2 px-3 py-1.5 rounded-md border text-sm hover:bg-gray-100'
+          className='ml-2 px-3 py-1 text-sm border rounded hover:bg-gray-100'
         >
           + Page
         </button>
-      </div>
-      <div className='ml-auto flex items-center gap-2'>
-        <ExportAllButton />
+
+        <button
+          onClick={addInputPage}
+          className='px-3 py-1 text-sm border rounded hover:bg-gray-100'
+        >
+          + Input
+        </button>
       </div>
 
-      {/* ===== CONFIRM DIALOG ===== */}
       <ConfirmDialog
-        open={pageToDelete !== null}
+        open={!!pageToDelete}
         title='Delete page?'
-        description='This page and all its elements will be permanently deleted.'
+        description='This page will be permanently removed.'
         confirmText='Delete'
         onCancel={() => setPageToDelete(null)}
         onConfirm={() => {

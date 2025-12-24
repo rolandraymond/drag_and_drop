@@ -4,25 +4,26 @@ import type { EditorElement, ElementType } from '../types/editor';
 import type { PageMeta } from '../types/schema';
 import { uid } from '../utils/uid';
 
-/* ---------- TYPES ---------- */
 type Page = {
   id: string;
-  name: string;
+  name?: string;
   elements: EditorElement[];
 };
 
 interface EditorStore {
   pages: Page[];
   activePageId: string;
-  renamePage: (pageId: string, name: string) => void;
-  deletePage: (pageId: string) => void;
 
   meta: PageMeta;
 
-  addPage: () => void;
   setActivePage: (pageId: string) => void;
+  addPage: () => void;
+  addInputPage: () => void;
+  renamePage: (pageId: string, name: string) => void;
+  deletePage: (pageId: string) => void;
 
   addElement: (type: ElementType) => void;
+
   reorderElements: (activeId: string, overId: string) => void;
   deleteElement: (id: string) => void;
   clearAll: () => void;
@@ -31,43 +32,27 @@ interface EditorStore {
   updateQuestion: (id: string, value: string) => void;
   updateAnswer: (id: string, value: string) => void;
   updateImageQuestionImage: (id: string, image: string) => void;
+
+  updateInputLabel: (id: string, value: string) => void;
+  updateInputPlaceholder: (id: string, value: string) => void;
 }
 
-/* ---------- HELPERS ---------- */
 function createElement(type: ElementType): EditorElement {
   if (type === 'imageQuestion') {
-    return {
-      id: uid(),
-      type,
-      x: 0,
-      y: 0,
-      image: '',
-      question: '',
-      answer: '',
-    };
+    return { id: uid(), type, x: 0, y: 0, image: '', question: '', answer: '' };
   }
 
   if (type === 'question') {
-    return {
-      id: uid(),
-      type,
-      x: 0,
-      y: 0,
-      question: '',
-      answer: '',
-    };
+    return { id: uid(), type, x: 0, y: 0, question: '', answer: '' };
   }
 
-  return {
-    id: uid(),
-    type: 'text',
-    x: 0,
-    y: 0,
-    value: 'New Text',
-  };
+  if (type === 'input') {
+    return { id: uid(), type, x: 0, y: 0, label: 'Input', placeholder: 'Type here...' };
+  }
+
+  return { id: uid(), type: 'text', x: 0, y: 0, value: 'New Text' };
 }
 
-/* ---------- STORE ---------- */
 export const useEditorStore = create<EditorStore>()(
   persist(
     (set) => ({
@@ -80,55 +65,62 @@ export const useEditorStore = create<EditorStore>()(
         author: '',
         createdAt: Date.now(),
       },
+
+      setActivePage: (pageId) => set({ activePageId: pageId }),
+
+      addPage: () =>
+        set((state) => {
+          const id = uid();
+          const pageNumber = state.pages.length + 1;
+
+          return {
+            pages: [...state.pages, { id, name: `Page ${pageNumber}`, elements: [] }],
+            activePageId: id,
+          };
+        }),
+
+      addInputPage: () =>
+        set((state) => {
+          const id = uid();
+          const pageNumber = state.pages.length + 1;
+
+          const newPage: Page = {
+            id,
+            name: `Input Page ${pageNumber}`,
+            elements: [createElement('input')],
+          };
+
+          console.log('addInputPage -> newPage', newPage);
+
+          return {
+            pages: [...state.pages, newPage],
+            activePageId: id,
+          };
+        }),
+
       renamePage: (pageId, name) =>
         set((state) => ({
           pages: state.pages.map((p) =>
             p.id === pageId ? { ...p, name: name.trim() || p.name } : p,
           ),
         })),
+
       deletePage: (pageId) =>
         set((state) => {
-          if (state.pages.length <= 1) {
-            // ممنوع تمسح آخر صفحة
-            return state;
-          }
-
-          const idx = state.pages.findIndex((p) => p.id === pageId);
-          if (idx === -1) return state;
+          if (state.pages.length <= 1) return state;
 
           const nextPages = state.pages.filter((p) => p.id !== pageId);
+          const nextActive = state.activePageId === pageId ? nextPages[0].id : state.activePageId;
 
-          // لو الصفحة المحذوفة هي الـ active، اختار صفحة بديلة
-          let nextActiveId = state.activePageId;
-          if (state.activePageId === pageId) {
-            const fallback = nextPages[idx] ?? nextPages[idx - 1] ?? nextPages[0];
-            nextActiveId = fallback.id;
-          }
-
-          return {
-            ...state,
-            pages: nextPages,
-            activePageId: nextActiveId,
-          };
+          return { pages: nextPages, activePageId: nextActive };
         }),
-
-      addPage: () =>
-        set((state) => {
-          const id = `page-${state.pages.length + 1}`;
-          return {
-            pages: [...state.pages, { id, name: `Page ${state.pages.length + 1}`, elements: [] }],
-            activePageId: id,
-          };
-        }),
-
-      setActivePage: (pageId) => set({ activePageId: pageId }),
 
       addElement: (type) =>
         set((state) => ({
           pages: state.pages.map((p) =>
-            p.id !== state.activePageId
-              ? p
-              : { ...p, elements: [...p.elements, createElement(type)] },
+            p.id === state.activePageId
+              ? { ...p, elements: [...p.elements, createElement(type)] }
+              : p,
           ),
         })),
 
@@ -152,75 +144,103 @@ export const useEditorStore = create<EditorStore>()(
       deleteElement: (id) =>
         set((state) => ({
           pages: state.pages.map((p) =>
-            p.id !== state.activePageId
-              ? p
-              : { ...p, elements: p.elements.filter((e) => e.id !== id) },
+            p.id === state.activePageId
+              ? { ...p, elements: p.elements.filter((e) => e.id !== id) }
+              : p,
           ),
         })),
 
       clearAll: () =>
         set((state) => ({
-          pages: state.pages.map((p) => (p.id !== state.activePageId ? p : { ...p, elements: [] })),
+          pages: state.pages.map((p) => (p.id === state.activePageId ? { ...p, elements: [] } : p)),
         })),
 
       updateText: (id, value) =>
         set((state) => ({
           pages: state.pages.map((p) =>
-            p.id !== state.activePageId
-              ? p
-              : {
+            p.id === state.activePageId
+              ? {
                   ...p,
                   elements: p.elements.map((el) =>
                     el.id === id && el.type === 'text' ? { ...el, value } : el,
                   ),
-                },
+                }
+              : p,
           ),
         })),
 
       updateQuestion: (id, value) =>
         set((state) => ({
           pages: state.pages.map((p) =>
-            p.id !== state.activePageId
-              ? p
-              : {
+            p.id === state.activePageId
+              ? {
                   ...p,
                   elements: p.elements.map((el) =>
                     el.id === id && 'question' in el ? { ...el, question: value } : el,
                   ),
-                },
+                }
+              : p,
           ),
         })),
 
       updateAnswer: (id, value) =>
         set((state) => ({
           pages: state.pages.map((p) =>
-            p.id !== state.activePageId
-              ? p
-              : {
+            p.id === state.activePageId
+              ? {
                   ...p,
                   elements: p.elements.map((el) =>
                     el.id === id && 'answer' in el ? { ...el, answer: value } : el,
                   ),
-                },
+                }
+              : p,
           ),
         })),
 
       updateImageQuestionImage: (id, image) =>
         set((state) => ({
           pages: state.pages.map((p) =>
-            p.id !== state.activePageId
-              ? p
-              : {
+            p.id === state.activePageId
+              ? {
                   ...p,
                   elements: p.elements.map((el) =>
                     el.id === id && el.type === 'imageQuestion' ? { ...el, image } : el,
                   ),
-                },
+                }
+              : p,
+          ),
+        })),
+
+      updateInputLabel: (id, value) =>
+        set((state) => ({
+          pages: state.pages.map((p) =>
+            p.id === state.activePageId
+              ? {
+                  ...p,
+                  elements: p.elements.map((el) =>
+                    el.id === id && el.type === 'input' ? { ...el, label: value } : el,
+                  ),
+                }
+              : p,
+          ),
+        })),
+
+      updateInputPlaceholder: (id, value) =>
+        set((state) => ({
+          pages: state.pages.map((p) =>
+            p.id === state.activePageId
+              ? {
+                  ...p,
+                  elements: p.elements.map((el) =>
+                    el.id === id && el.type === 'input' ? { ...el, placeholder: value } : el,
+                  ),
+                }
+              : p,
           ),
         })),
     }),
     {
-      name: 'editor-pages-v1',
+      name: 'editor-pages-v2',
       storage: createJSONStorage(() => localStorage),
     },
   ),

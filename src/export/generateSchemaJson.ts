@@ -13,6 +13,12 @@ export type PageSchemaV1 = {
         points: number;
         image?: string;
       }
+    | {
+        id: string;
+        type: 'input';
+        label?: string;
+        placeholder?: string;
+      }
   >;
 };
 
@@ -34,6 +40,15 @@ export function generateSchemaJson(
           id: el.id,
           type: 'text',
           value: cleanText(el.value),
+        };
+      }
+      // INPUT
+      if (el.type === 'input') {
+        return {
+          id: el.id,
+          type: 'input',
+          label: cleanText(el.label),
+          placeholder: cleanText(el.placeholder),
         };
       }
 
