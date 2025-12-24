@@ -1,16 +1,19 @@
 import ThemeToggle from './components/ThemeToggle';
 
 import { closestCenter, DndContext, type DragEndEvent } from '@dnd-kit/core';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import AboutPage from './components/AboutPage';
+import AccountPage from './components/AccountPage';
 import Canvas from './components/Canvas';
+import EmailVerification from './components/EmailVerification';
 import ForgotPassword from './components/ForgotPassword';
 import Home from './components/Home';
 import HowItWorks from './components/HowItWorks';
 import Login from './components/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 import Register from './components/Register';
 import ResetPassword from './components/ResetPassword';
 import SaveButton from './components/SaveButton';
@@ -23,7 +26,21 @@ import { Link } from 'react-router-dom';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { setNavigateFunction } from './utils/navigation';
+import { useEffect } from 'react';
+import { useAuth } from './hooks/useAuth';
 import PagesNav from './components/PagesNav';
+
+const RedirectToReset: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const search = window.location.search;
+    navigate(`/reset-password${search}`);
+  }, [navigate]);
+
+  return <div>Redirecting...</div>;
+};
 
 const MainApp = () => {
   const reorderElements = useEditorStore((s) => s.reorderElements);
@@ -107,6 +124,21 @@ const elements = activePage?.elements ?? [];
 };
 
 export default function App() {
+  const navigate = useNavigate();
+  const { loading } = useAuth();
+
+  useEffect(() => {
+    setNavigateFunction(navigate);
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#282930] flex items-center justify-center">
+        <div className="text-[#E3FFCC] text-xl animate-pulse">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <>
       <ToastContainer
@@ -122,9 +154,12 @@ export default function App() {
         <Route path='/register' element={<Register />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/reset-password' element={<ResetPassword />} />
+        <Route path='/api/password/reset' element={<RedirectToReset />} />
+        <Route path='/verify-email/:token' element={<EmailVerification />} />
+        <Route path='/account' element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
         <Route path='/About' element={<AboutPage />} />
         <Route path='/how-it-works' element={<HowItWorks />} />
-        <Route path='/editor' element={<MainApp />} />
+        <Route path='/editor' element={<ProtectedRoute><MainApp /></ProtectedRoute>} />
         <Route path='/' element={<Home />} />
         <Route path='/quiz' element={<QuizRuntime />} />
       </Routes>
