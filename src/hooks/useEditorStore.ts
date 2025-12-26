@@ -15,6 +15,7 @@ interface EditorStore {
   activePageId: string;
 
   meta: PageMeta;
+  setMeta: (meta: Partial<PageMeta>) => void;
 
   setActivePage: (pageId: string) => void;
   addPage: () => void;
@@ -47,10 +48,23 @@ function createElement(type: ElementType): EditorElement {
   }
 
   if (type === 'input') {
-    return { id: uid(), type, x: 0, y: 0, label: 'Input', placeholder: 'Type here...' };
+    return {
+      id: uid(),
+      type,
+      x: 0,
+      y: 0,
+      label: 'Input',
+      placeholder: 'Type here...',
+    };
   }
 
-  return { id: uid(), type: 'text', x: 0, y: 0, value: 'New Text' };
+  return {
+    id: uid(),
+    type: 'text',
+    x: 0,
+    y: 0,
+    value: 'New Text',
+  };
 }
 
 export const useEditorStore = create<EditorStore>()(
@@ -65,6 +79,14 @@ export const useEditorStore = create<EditorStore>()(
         author: '',
         createdAt: Date.now(),
       },
+
+      setMeta: (partial) =>
+        set((state) => ({
+          meta: {
+            ...state.meta,
+            ...partial,
+          },
+        })),
 
       setActivePage: (pageId) => set({ activePageId: pageId }),
 
@@ -84,16 +106,15 @@ export const useEditorStore = create<EditorStore>()(
           const id = uid();
           const pageNumber = state.pages.length + 1;
 
-          const newPage: Page = {
-            id,
-            name: `Input Page ${pageNumber}`,
-            elements: [createElement('input')],
-          };
-
-          console.log('addInputPage -> newPage', newPage);
-
           return {
-            pages: [...state.pages, newPage],
+            pages: [
+              ...state.pages,
+              {
+                id,
+                name: `Input Page ${pageNumber}`,
+                elements: [createElement('input')],
+              },
+            ],
             activePageId: id,
           };
         }),
@@ -109,10 +130,10 @@ export const useEditorStore = create<EditorStore>()(
         set((state) => {
           if (state.pages.length <= 1) return state;
 
-          const nextPages = state.pages.filter((p) => p.id !== pageId);
-          const nextActive = state.activePageId === pageId ? nextPages[0].id : state.activePageId;
+          const pages = state.pages.filter((p) => p.id !== pageId);
+          const activePageId = state.activePageId === pageId ? pages[0].id : state.activePageId;
 
-          return { pages: nextPages, activePageId: nextActive };
+          return { pages, activePageId };
         }),
 
       addElement: (type) =>
