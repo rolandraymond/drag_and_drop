@@ -9,7 +9,7 @@ import {
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Route, Routes, useNavigate } from 'react-router-dom';
 
 import Canvas from './components/Canvas';
@@ -37,6 +37,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from './hooks/useAuth';
 import { useEditorStore } from './hooks/useEditorStore';
 import { setNavigateFunction } from './utils/navigation';
+import type { Category, Subcategory } from './types/schema';
 
 const RedirectToReset = () => {
   const navigate = useNavigate();
@@ -47,12 +48,59 @@ const RedirectToReset = () => {
 
   return <div>Redirecting...</div>;
 };
+const authFetch = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('access_token');
+
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Request failed');
+  }
+
+  return res.json();
+};
 
 const MainApp = () => {
-  const reorderElements = useEditorStore((s) => s.reorderElements);
-  const meta = useEditorStore((s) => s.meta);
-  const pages = useEditorStore((s) => s.pages);
-  const activePageId = useEditorStore((s) => s.activePageId);
+  
+ const reorderElements = useEditorStore((s) => s.reorderElements);
+const meta = useEditorStore((s) => s.meta);
+const pages = useEditorStore((s) => s.pages);
+const activePageId = useEditorStore((s) => s.activePageId);
+
+const categoryId = useEditorStore((s) => s.categoryId);
+const setCategoryId = useEditorStore((s) => s.setCategoryId);
+
+const subcategoryId = useEditorStore((s) => s.subcategoryId);
+const setSubcategoryId = useEditorStore((s) => s.setSubcategoryId);
+
+const [categories, setCategories] = useState<Category[]>([]);
+const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+
+const [newCategoryName, setNewCategoryName] = useState('');
+const [newSubcategoryName, setNewSubcategoryName] = useState('');
+
+ useEffect(() => {
+  authFetch('http://localhost:8000/api/categories')
+    .then(setCategories)
+    .catch(console.error);
+}, []);
+
+ useEffect(() => {
+  if (!categoryId) return;
+
+  fetch(`http://localhost:8000/api/categories/${categoryId}/subcategories`)
+    .then(res => res.json())
+    .then(setSubcategories);
+}, [categoryId]);
+
 
   const activePage = pages.find((p) => p.id === activePageId);
   const elements = activePage?.elements ?? [];
@@ -86,23 +134,150 @@ const MainApp = () => {
         <div className='flex-1 overflow-hidden'>
           <div className='h-full overflow-auto'>
             <div className='sticky top-0 z-10 bg-gray-50/90 backdrop-blur border-b'>
-              <div className='max-w-3xl mx-auto px-6 py-4 flex items-center justify-between'>
-                <div>
-                  <div className='text-lg font-semibold text-gray-900'>
-                    {meta.name || 'Untitled Quiz'}
-                  </div>
-                  <div className='text-sm text-gray-500'>Drag to reorder • Edit inline</div>
-                </div>
+  <div className='max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4'>
 
-                <div className='flex items-center gap-2'>
-                  <ThemeToggle />
-                  <SaveButton />
-                  <Link to='/quiz' className='px-4 py-2 rounded border text-sm hover:bg-gray-100'>
-                    Preview Quiz
-                  </Link>
-                </div>
-              </div>
-            </div>
+    {/* LEFT */}
+    <div className='min-w-[200px]'>
+      <div className='text-lg font-semibold text-gray-900'>
+        {meta.name || 'Untitled Quiz'}
+      </div>
+      <div className='text-sm text-gray-500'>
+        Drag to reorder • Edit inline
+      </div>
+    </div>
+
+    {/* CENTER */}
+    <div className='flex flex-col gap-2'>
+
+      {/* CATEGORY */}
+      <div className='flex items-center gap-2'>
+        <select
+           value={categoryId ?? ''}
+          onChange={(e) => {
+            const id = e.target.value;
+            setCategoryId(id || '');
+            setSubcategoryId('');
+            setSubcategories([]);
+            setNewSubcategoryName('');
+          }}
+          className='border rounded px-2 py-1 text-sm'
+        >
+          <option value=''>Select category</option>
+          {categories.map((c) => (
+            <option key={c._id ?? c.name} value={c._id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        <input
+          value={newCategoryName}
+          onChange={(e) => setNewCategoryName(e.target.value)}
+          placeholder='New category'
+          className='border rounded px-2 py-1 text-sm'
+        />
+
+        <button
+          disabled={!newCategoryName.trim()}
+       onClick={async () => {
+              if (!newCategoryName.trim()) return;
+
+              try {
+                const created: Category = await authFetch(
+                  'http://localhost:8000/api/categories',
+                  {
+                    method: 'POST',
+                    body: JSON.stringify({ name: newCategoryName }),
+                  }
+                );
+
+                setCategories((prev) => [created, ...prev]);
+                setCategoryId(created._id);
+                setNewCategoryName('');
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+
+              className='px-3 py-1 border rounded text-sm disabled:opacity-50'
+            >
+              Add
+            </button>
+          </div>
+
+          {/* SUBCATEGORY */}
+          <div className='flex items-center gap-2'>
+            <select
+               value={subcategoryId ?? ''}
+              onChange={(e) => setSubcategoryId(e.target.value)}
+              disabled={!categoryId}
+              className='border rounded px-2 py-1 text-sm'
+            >
+              <option value=''>Select subcategory</option>
+              {subcategories.map((s) => (
+                <option key={s._id}  value={s._id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            <input
+              value={newSubcategoryName}
+              onChange={(e) => setNewSubcategoryName(e.target.value)}
+              placeholder='New subcategory'
+              disabled={!categoryId}
+              className='border rounded px-2 py-1 text-sm'
+            />
+
+            <button
+              disabled={!categoryId || !newSubcategoryName.trim()}
+              onClick={async () => {
+      if (!newSubcategoryName.trim()) return;
+
+      try {
+        const created: Subcategory = await authFetch(
+          'http://localhost:8000/api/subcategories',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              name: newSubcategoryName,
+              category_id: categoryId,
+            }),
+          }
+        );
+
+        setSubcategories((prev) => [...prev, created]);
+        setSubcategoryId(created._id);
+        setNewSubcategoryName('');
+      } catch (err) {
+        console.error(err);
+      }
+    }}
+
+
+          className='px-3 py-1 border rounded text-sm disabled:opacity-50'
+        >
+          Add
+        </button>
+      </div>
+    </div>
+
+    {/* RIGHT */}
+    <div className='flex items-center gap-2'>
+      <ThemeToggle />
+      <SaveButton />
+      <Link
+        to='/quiz'
+        className='px-4 py-2 rounded border text-sm hover:bg-gray-100'
+      >
+        Preview
+      </Link>
+    </div>
+
+  </div>
+</div>
+
+
 
             <DndContext
               sensors={sensors}

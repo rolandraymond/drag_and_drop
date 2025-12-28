@@ -11,3 +11,15 @@ export interface PageSchemaV1 {
 
   elements: EditorElement[];
 }
+
+
+export interface Category {
+  _id: string;
+  name: string;
+}
+
+export interface Subcategory {
+  _id: string;
+  name: string;
+  category_id: string;
+}

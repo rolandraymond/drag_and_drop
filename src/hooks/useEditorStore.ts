@@ -13,6 +13,14 @@ type Page = {
 interface EditorStore {
   pages: Page[];
   activePageId: string;
+  categoryId: string | null;
+  subcategoryId: string | null;
+  setCategoryId: (id: string | null) => void;
+  setSubcategoryId: (id: string | null) => void;
+
+
+
+  
 
   meta: PageMeta;
   setMeta: (meta: Partial<PageMeta>) => void;
@@ -72,6 +80,11 @@ export const useEditorStore = create<EditorStore>()(
     (set) => ({
       pages: [{ id: 'page-1', name: 'Page 1', elements: [] }],
       activePageId: 'page-1',
+      categoryId: null,
+      subcategoryId: null,
+
+      setCategoryId: (id) => set({ categoryId: id }),
+      setSubcategoryId: (id) => set({ subcategoryId: id }),
 
       meta: {
         name: 'Untitled Quiz',
@@ -98,6 +111,7 @@ export const useEditorStore = create<EditorStore>()(
           return {
             pages: [...state.pages, { id, name: `Page ${pageNumber}`, elements: [] }],
             activePageId: id,
+            
           };
         }),
 
