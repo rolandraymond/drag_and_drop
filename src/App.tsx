@@ -11,6 +11,11 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useEffect, useState } from 'react';
 import { Link, Route, Routes, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import {
+  hasEmptyPages,
+  hasEmptyElements,
+} from './utils/validation/editorValidation';
 
 import Canvas from './components/Canvas';
 import PagesNav from './components/PagesNav';
@@ -38,6 +43,7 @@ import { useAuth } from './hooks/useAuth';
 import { useEditorStore } from './hooks/useEditorStore';
 import { setNavigateFunction } from './utils/navigation';
 import type { Category, Subcategory } from './types/schema';
+
 
 const RedirectToReset = () => {
   const navigate = useNavigate();
@@ -69,7 +75,8 @@ const authFetch = async (url: string, options: RequestInit = {}) => {
 };
 
 const MainApp = () => {
-  
+  const navigate = useNavigate();
+
  const reorderElements = useEditorStore((s) => s.reorderElements);
 const meta = useEditorStore((s) => s.meta);
 const pages = useEditorStore((s) => s.pages);
@@ -86,6 +93,27 @@ const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
 
 const [newCategoryName, setNewCategoryName] = useState('');
 const [newSubcategoryName, setNewSubcategoryName] = useState('');
+const handlePreview = () => {
+  const pages = useEditorStore.getState().pages;
+  const categoryId = useEditorStore.getState().categoryId;
+
+  if (hasEmptyPages(pages)) {
+    toast.error('One or more pages are empty.');
+    return;
+  }
+
+  if (hasEmptyElements(pages)) {
+    toast.error('Some questions or inputs are empty.');
+    return;
+  }
+
+  if (!categoryId) {
+    toast.error('Please select a category before previewing.');
+    return;
+  }
+
+  navigate('/quiz');
+};
 
  useEffect(() => {
   authFetch('http://localhost:8000/api/categories')
@@ -266,12 +294,14 @@ const [newSubcategoryName, setNewSubcategoryName] = useState('');
     <div className='flex items-center gap-2'>
       <ThemeToggle />
       <SaveButton />
-      <Link
-        to='/quiz'
-        className='px-4 py-2 rounded border text-sm hover:bg-gray-100'
+            <button
+        type="button"
+        onClick={handlePreview}
+        className="px-4 py-2 rounded border text-sm hover:bg-gray-100"
       >
         Preview
-      </Link>
+      </button>
+
     </div>
 
   </div>

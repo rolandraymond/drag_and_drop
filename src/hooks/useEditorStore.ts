@@ -7,8 +7,11 @@ import { uid } from '../utils/uid';
 type Page = {
   id: string;
   name?: string;
+  categoryId: string | null;
+  subcategoryId: string | null;
   elements: EditorElement[];
 };
+
 
 interface EditorStore {
   pages: Page[];
@@ -27,7 +30,7 @@ interface EditorStore {
 
   setActivePage: (pageId: string) => void;
   addPage: () => void;
-  addInputPage: () => void;
+  
   renamePage: (pageId: string, name: string) => void;
   deletePage: (pageId: string) => void;
 
@@ -78,7 +81,16 @@ function createElement(type: ElementType): EditorElement {
 export const useEditorStore = create<EditorStore>()(
   persist(
     (set) => ({
-      pages: [{ id: 'page-1', name: 'Page 1', elements: [] }],
+      pages: [
+        {
+          id: 'page-1',
+          name: 'Page 1',
+          categoryId: null,
+          subcategoryId: null,
+          elements: [],
+        },
+      ],
+
       activePageId: 'page-1',
       categoryId: null,
       subcategoryId: null,
@@ -105,18 +117,8 @@ export const useEditorStore = create<EditorStore>()(
 
       addPage: () =>
         set((state) => {
-          const id = uid();
-          const pageNumber = state.pages.length + 1;
+          if (!state.categoryId) return state;
 
-          return {
-            pages: [...state.pages, { id, name: `Page ${pageNumber}`, elements: [] }],
-            activePageId: id,
-            
-          };
-        }),
-
-      addInputPage: () =>
-        set((state) => {
           const id = uid();
           const pageNumber = state.pages.length + 1;
 
@@ -125,13 +127,18 @@ export const useEditorStore = create<EditorStore>()(
               ...state.pages,
               {
                 id,
-                name: `Input Page ${pageNumber}`,
-                elements: [createElement('input')],
+                name: `Page ${pageNumber}`,
+                categoryId: state.categoryId,
+                subcategoryId: state.subcategoryId,
+                elements: [],
               },
             ],
             activePageId: id,
           };
         }),
+
+
+
 
       renamePage: (pageId, name) =>
         set((state) => ({

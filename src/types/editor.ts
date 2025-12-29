@@ -34,9 +34,21 @@ export interface PageSchema {
   elements: EditorElement[];
   updatedAt: string;
 }
+
+export type EditorPage = {
+  id: string;
+  name?: string;
+  categoryId: string;
+  subcategoryId: string;
+  elements: EditorElement[];
+};
+
+
 export interface InputElement extends BaseElement {
   type: 'input';
   label?: string;
   placeholder?: string;
 }
+
+
 export type EditorElement = TextElement | QuestionElement | ImageQuestionElement | InputElement;
