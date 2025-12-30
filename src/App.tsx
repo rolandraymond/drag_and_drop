@@ -10,7 +10,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useEffect, useState } from 'react';
-import { Link, Route, Routes, useNavigate } from 'react-router-dom';
+import {  Route, Routes, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   hasEmptyPages,
@@ -82,11 +82,12 @@ const meta = useEditorStore((s) => s.meta);
 const pages = useEditorStore((s) => s.pages);
 const activePageId = useEditorStore((s) => s.activePageId);
 
-const categoryId = useEditorStore((s) => s.categoryId);
-const setCategoryId = useEditorStore((s) => s.setCategoryId);
+const setPageCategory = useEditorStore((s) => s.setPageCategory);
+const setPageSubcategory = useEditorStore((s) => s.setPageSubcategory);
 
-const subcategoryId = useEditorStore((s) => s.subcategoryId);
-const setSubcategoryId = useEditorStore((s) => s.setSubcategoryId);
+const activePage = pages.find((p) => p.id === activePageId);
+
+const elements = activePage?.elements ?? [];
 
 const [categories, setCategories] = useState<Category[]>([]);
 const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -95,7 +96,6 @@ const [newCategoryName, setNewCategoryName] = useState('');
 const [newSubcategoryName, setNewSubcategoryName] = useState('');
 const handlePreview = () => {
   const pages = useEditorStore.getState().pages;
-  const categoryId = useEditorStore.getState().categoryId;
 
   if (hasEmptyPages(pages)) {
     toast.error('One or more pages are empty.');
@@ -107,13 +107,19 @@ const handlePreview = () => {
     return;
   }
 
-  if (!categoryId) {
-    toast.error('Please select a category before previewing.');
+  if (pages.some((p) => !p.categoryId)) {
+    toast.error('Every page must have a category');
+    return;
+  }
+
+  if (pages.some((p) => !p.subcategoryId)) {
+    toast.error('Every page must have a subcategory');
     return;
   }
 
   navigate('/quiz');
 };
+
 
  useEffect(() => {
   authFetch('http://localhost:8000/api/categories')
@@ -121,17 +127,27 @@ const handlePreview = () => {
     .catch(console.error);
 }, []);
 
- useEffect(() => {
-  if (!categoryId) return;
+useEffect(() => {
+  const categoryId = activePage?.categoryId;
 
-  fetch(`http://localhost:8000/api/categories/${categoryId}/subcategories`)
-    .then(res => res.json())
-    .then(setSubcategories);
-}, [categoryId]);
+  if (!categoryId) {
+    setSubcategories([]);
+    return;
+  }
+
+  authFetch(`http://localhost:8000/api/categories/${categoryId}/subcategories`)
+    .then(setSubcategories)
+    .catch((err) => {
+      console.error(err);
+      setSubcategories([]);
+      toast.error('Failed to load subcategories');
+    });
+}, [activePage?.categoryId]);
 
 
-  const activePage = pages.find((p) => p.id === activePageId);
-  const elements = activePage?.elements ?? [];
+
+
+  
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -180,23 +196,27 @@ const handlePreview = () => {
       {/* CATEGORY */}
       <div className='flex items-center gap-2'>
         <select
-           value={categoryId ?? ''}
-          onChange={(e) => {
-            const id = e.target.value;
-            setCategoryId(id || '');
-            setSubcategoryId('');
+        value={activePage?.categoryId ?? ''}
+                  onChange={(e) => {
+            const id = e.target.value || null;
+
+            const pageId = activePageId;
+            if (!pageId) return;
+
+            setPageCategory(pageId, id);
             setSubcategories([]);
             setNewSubcategoryName('');
           }}
-          className='border rounded px-2 py-1 text-sm'
-        >
-          <option value=''>Select category</option>
-          {categories.map((c) => (
-            <option key={c._id ?? c.name} value={c._id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        className="border rounded px-2 py-1 text-sm"
+      >
+        <option value="">Select category</option>
+        {categories.map((c) => (
+          <option key={c._id} value={c._id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+
 
         <input
           value={newCategoryName}
@@ -220,7 +240,8 @@ const handlePreview = () => {
                 );
 
                 setCategories((prev) => [created, ...prev]);
-                setCategoryId(created._id);
+                setPageCategory(activePageId, created._id);
+
                 setNewCategoryName('');
               } catch (err) {
                 console.error(err);
@@ -236,57 +257,69 @@ const handlePreview = () => {
           {/* SUBCATEGORY */}
           <div className='flex items-center gap-2'>
             <select
-               value={subcategoryId ?? ''}
-              onChange={(e) => setSubcategoryId(e.target.value)}
-              disabled={!categoryId}
-              className='border rounded px-2 py-1 text-sm'
-            >
-              <option value=''>Select subcategory</option>
-              {subcategories.map((s) => (
-                <option key={s._id}  value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+  value={activePage?.subcategoryId ?? ''}
+  onChange={(e) => {
+    setPageSubcategory(activePageId, e.target.value || null);
+  }}
+  disabled={!activePage?.categoryId}
+  className="border rounded px-2 py-1 text-sm"
+>
+  <option value="">Select subcategory</option>
+  {subcategories.map((s) => (
+    <option key={s._id} value={s._id}>
+      {s.name}
+    </option>
+  ))}
+</select>
 
-            <input
-              value={newSubcategoryName}
-              onChange={(e) => setNewSubcategoryName(e.target.value)}
-              placeholder='New subcategory'
-              disabled={!categoryId}
-              className='border rounded px-2 py-1 text-sm'
-            />
+          <input
+          value={newSubcategoryName}
+          onChange={(e) => setNewSubcategoryName(e.target.value)}
+          placeholder="New subcategory"
+          disabled={!activePage?.categoryId}
+          className="border rounded px-2 py-1 text-sm"
+        />
 
-            <button
-              disabled={!categoryId || !newSubcategoryName.trim()}
-              onClick={async () => {
-      if (!newSubcategoryName.trim()) return;
+        <button
+          disabled={!activePage?.categoryId || !newSubcategoryName.trim()}
+          onClick={async () => {
+            const categoryId = activePage?.categoryId;
+            if (!categoryId) {
+              toast.error('Select a category first');
+              return;
+            }
 
-      try {
-        const created: Subcategory = await authFetch(
-          'http://localhost:8000/api/subcategories',
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              name: newSubcategoryName,
-              category_id: categoryId,
-            }),
-          }
-        );
+            const name = newSubcategoryName.trim();
+            if (!name) return;
 
-        setSubcategories((prev) => [...prev, created]);
-        setSubcategoryId(created._id);
-        setNewSubcategoryName('');
-      } catch (err) {
-        console.error(err);
-      }
-    }}
+            try {
+              const created: Subcategory = await authFetch(
+                'http://localhost:8000/api/subcategories',
+                {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    name,
+                    category_id: categoryId,
+                  }),
+                }
+              );
 
+              setSubcategories((prev) => [...prev, created]);
 
-          className='px-3 py-1 border rounded text-sm disabled:opacity-50'
+              
+              setPageSubcategory(activePageId, created._id);
+
+              setNewSubcategoryName('');
+            } catch (err) {
+              console.error(err);
+              toast.error('Failed to create subcategory');
+            }
+          }}
+          className="px-3 py-1 border rounded text-sm disabled:opacity-50"
         >
           Add
         </button>
+
       </div>
     </div>
 

@@ -6,8 +6,6 @@ import { useEditorStore } from '../hooks/useEditorStore';
 import type { EditorElement } from '../types/editor';
 import PreviewSidebar from './PreviewSidebar';
 
-/* ================= helpers ================= */
-
 function normalize(value: string) {
   return value.trim().toLowerCase();
 }
@@ -22,94 +20,103 @@ function getQuestions(elements: EditorElement[]) {
   );
 }
 
-/* ================= component ================= */
+function pageQuestionKey(pageId: string, elementIndex: number) {
+  return `${pageId}-${elementIndex}`;
+}
 
 export default function QuizRuntime() {
   const navigate = useNavigate();
-
-  /* ✅ Zustand selector (stable – no infinite loop) */
   const pages = useEditorStore((s) => s.pages);
 
   const [pageIndex, setPageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
-
-  /* ================= guards ================= */
+  const [submittedPages, setSubmittedPages] = useState<Record<string, boolean>>(
+    {}
+  );
 
   if (!pages.length) {
     return <div className="p-10 text-center">No pages to preview</div>;
   }
 
   const currentPage = pages[pageIndex];
-  const questions = getQuestions(currentPage.elements);
+  const currentPageId = currentPage.id;
 
-  /* ================= progress ================= */
+  const isCurrentPageSubmitted = !!submittedPages[currentPageId];
 
-  const answeredCorrect = questions.filter((q, i) => {
-    const key = `${currentPage.id}-${i}`;
-    return submitted[key] && isCorrect(answers[key], q.answer);
-  }).length;
+  const currentQuestions = useMemo(
+    () => getQuestions(currentPage.elements),
+    [currentPage.elements]
+  );
 
-  const progress =
-    questions.length === 0
-      ? 0
-      : Math.round((answeredCorrect / questions.length) * 100);
+  const handleSubmitPage = () => {
+    const questions = currentQuestions;
 
-  const canGoNext = answeredCorrect === questions.length;
+    if (questions.length === 0) {
+      toast.info('No questions on this page');
+      setSubmittedPages((p) => ({ ...p, [currentPageId]: true }));
+      return;
+    }
 
-  /* ================= UI ================= */
+    const hasEmpty = questions.some((q) => {
+      const idx = currentPage.elements.indexOf(q as any);
+      const key = pageQuestionKey(currentPageId, idx);
+      return !(answers[key] ?? '').trim();
+    });
+
+    if (hasEmpty) {
+      toast.error('Answer all questions on this page first');
+      return;
+    }
+
+    let total = 0;
+    let correct = 0;
+
+    currentPage.elements.forEach((el, idx) => {
+      if (el.type !== 'question' && el.type !== 'imageQuestion') return;
+
+      total++;
+      const key = pageQuestionKey(currentPageId, idx);
+      const userAnswer = answers[key] ?? '';
+
+      if (isCorrect(userAnswer, el.answer)) correct++;
+    });
+
+    setSubmittedPages((p) => ({ ...p, [currentPageId]: true }));
+    toast.success(`Page score: ${correct} / ${total}`);
+  };
+
+  const canGoPrev = pageIndex > 0;
+  const canGoNext = pageIndex < pages.length - 1;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-
-      {/* ===== SIDEBAR ===== */}
       <PreviewSidebar
         pages={pages}
-        activePageId={currentPage.id}
-        onSelectPage={() => {
-          toast.info('Finish current page first');
+        activePageId={currentPageId}
+        onSelectPage={(id) => {
+          const index = pages.findIndex((p) => p.id === id);
+          if (index === -1) return;
+          setPageIndex(index);
         }}
       />
 
-      {/* ===== MAIN ===== */}
       <div className="flex-1">
+        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+          <button
+            onClick={() => navigate('/editor')}
+            className="text-sm px-3 py-1 border rounded"
+          >
+            ← Back to Editor
+          </button>
 
-        {/* ===== HEADER ===== */}
-        <div className="sticky top-0 bg-white border-b p-4 relative">
+          <div className="font-semibold">{currentPage.name}</div>
 
-          {/* progress bar */}
-          <div className="absolute bottom-0 left-0 h-1 w-full bg-gray-200">
-            <div
-              className="h-full bg-black transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between items-center">
-
-            <button
-              onClick={() => navigate('/editor')}
-              className="text-sm px-3 py-1 border rounded"
-            >
-              ← Back to Editor
-            </button>
-
-            <div className="text-center">
-              <div className="font-bold">{currentPage.name}</div>
-              <div className="text-xs text-gray-500">
-                {answeredCorrect} / {questions.length} correct
-              </div>
-            </div>
-
-            <div className="text-sm font-medium">
-              {progress}%
-            </div>
+          <div className="text-sm text-gray-500">
+            Page {pageIndex + 1} / {pages.length}
           </div>
         </div>
 
-        {/* ===== CONTENT ===== */}
         <div className="max-w-xl mx-auto p-6 space-y-6">
-
           {currentPage.elements.map((el, index) => {
             if (el.type === 'text') {
               return (
@@ -120,38 +127,37 @@ export default function QuizRuntime() {
             }
 
             if (el.type === 'question' || el.type === 'imageQuestion') {
-              const key = `${currentPage.id}-${index}`;
+              const key = pageQuestionKey(currentPageId, index);
               const userAnswer = answers[key] ?? '';
-              const isDone = submitted[key];
-              const correct = isDone && isCorrect(userAnswer, el.answer);
+
+              const correct =
+                isCurrentPageSubmitted && isCorrect(userAnswer, el.answer);
+
+              const wrong =
+                isCurrentPageSubmitted && !isCorrect(userAnswer, el.answer);
 
               return (
                 <div
                   key={el.id}
-                  className={`border rounded p-4 space-y-2
-                    ${
-                      !isDone
-                        ? ''
-                        : correct
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-red-500 bg-red-50'
-                    }`}
+                  className={`border rounded p-4 space-y-2 ${
+                    !isCurrentPageSubmitted
+                      ? ''
+                      : correct
+                      ? 'border-green-500 bg-green-50'
+                      : wrong
+                      ? 'border-red-500 bg-red-50'
+                      : ''
+                  }`}
                 >
                   {el.type === 'imageQuestion' && el.image && (
-                    <img
-                      src={el.image}
-                      alt=""
-                      className="rounded border"
-                    />
+                    <img src={el.image} alt="" className="rounded border" />
                   )}
 
-                  <div className="font-medium">
-                    {el.question}
-                  </div>
+                  <div className="font-medium">{el.question}</div>
 
                   <input
                     value={userAnswer}
-                    readOnly={isDone}
+                    disabled={isCurrentPageSubmitted}
                     onChange={(e) =>
                       setAnswers((p) => ({
                         ...p,
@@ -159,34 +165,10 @@ export default function QuizRuntime() {
                       }))
                     }
                     className="w-full border px-3 py-2"
+                    placeholder="Your answer"
                   />
 
-                  {!isDone && (
-                    <button
-                      onClick={() => {
-                        if (!userAnswer.trim()) {
-                          toast.error('Answer required');
-                          return;
-                        }
-
-                        setSubmitted((p) => ({
-                          ...p,
-                          [key]: true,
-                        }));
-
-                        if (isCorrect(userAnswer, el.answer)) {
-                          toast.success('Correct');
-                        } else {
-                          toast.error('Wrong answer');
-                        }
-                      }}
-                      className="bg-black text-white px-4 py-1"
-                    >
-                      Submit
-                    </button>
-                  )}
-
-                  {isDone && !correct && (
+                  {isCurrentPageSubmitted && !correct && (
                     <div className="text-sm text-red-700">
                       Correct answer: {el.answer}
                     </div>
@@ -198,11 +180,9 @@ export default function QuizRuntime() {
             return null;
           })}
 
-          {/* ===== PAGE NAV ===== */}
           <div className="flex justify-between pt-4">
-
             <button
-              disabled={pageIndex === 0}
+              disabled={!canGoPrev}
               onClick={() => setPageIndex((i) => i - 1)}
               className="disabled:opacity-50"
             >
@@ -218,9 +198,19 @@ export default function QuizRuntime() {
             </button>
           </div>
 
-          {!canGoNext && (
-            <div className="text-center text-sm text-red-600">
-              Fix the highlighted answers first
+          {!isCurrentPageSubmitted && (
+            <button
+              type="button"
+              onClick={handleSubmitPage}
+              className="w-full bg-black text-white py-3 mt-4"
+            >
+              Submit Page
+            </button>
+          )}
+
+          {isCurrentPageSubmitted && (
+            <div className="text-center text-sm text-gray-600">
+              This page is submitted
             </div>
           )}
         </div>

@@ -7,19 +7,18 @@ import { uid } from '../utils/uid';
 type Page = {
   id: string;
   name?: string;
+  elements: EditorElement[];
   categoryId: string | null;
   subcategoryId: string | null;
-  elements: EditorElement[];
 };
 
 
 interface EditorStore {
   pages: Page[];
   activePageId: string;
-  categoryId: string | null;
-  subcategoryId: string | null;
-  setCategoryId: (id: string | null) => void;
-  setSubcategoryId: (id: string | null) => void;
+  setPageCategory: (pageId: string, categoryId: string | null) => void;
+  setPageSubcategory: (pageId: string, subcategoryId: string | null) => void;
+
 
 
 
@@ -85,18 +84,16 @@ export const useEditorStore = create<EditorStore>()(
         {
           id: 'page-1',
           name: 'Page 1',
+          elements: [],
           categoryId: null,
           subcategoryId: null,
-          elements: [],
         },
       ],
 
       activePageId: 'page-1',
-      categoryId: null,
-      subcategoryId: null,
+    
 
-      setCategoryId: (id) => set({ categoryId: id }),
-      setSubcategoryId: (id) => set({ subcategoryId: id }),
+      
 
       meta: {
         name: 'Untitled Quiz',
@@ -117,7 +114,7 @@ export const useEditorStore = create<EditorStore>()(
 
       addPage: () =>
         set((state) => {
-          if (!state.categoryId) return state;
+          
 
           const id = uid();
           const pageNumber = state.pages.length + 1;
@@ -128,8 +125,8 @@ export const useEditorStore = create<EditorStore>()(
               {
                 id,
                 name: `Page ${pageNumber}`,
-                categoryId: state.categoryId,
-                subcategoryId: state.subcategoryId,
+                categoryId: null,
+                subcategoryId: null,
                 elements: [],
               },
             ],
@@ -156,7 +153,21 @@ export const useEditorStore = create<EditorStore>()(
 
           return { pages, activePageId };
         }),
+        setPageCategory: (pageId, categoryId) =>
+        set((state) => ({
+          pages: state.pages.map((p) =>
+            p.id === pageId
+              ? { ...p, categoryId, subcategoryId: null }
+              : p
+          ),
+        })),
 
+      setPageSubcategory: (pageId, subcategoryId) =>
+        set((state) => ({
+          pages: state.pages.map((p) =>
+            p.id === pageId ? { ...p, subcategoryId } : p
+          ),
+        })),
       addElement: (type) =>
         set((state) => ({
           pages: state.pages.map((p) =>
@@ -165,6 +176,8 @@ export const useEditorStore = create<EditorStore>()(
               : p,
           ),
         })),
+      
+
 
       reorderElements: (activeId, overId) =>
         set((state) => ({

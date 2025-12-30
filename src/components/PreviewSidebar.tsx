@@ -8,7 +8,7 @@ type Page = {
 type Props = {
   pages: Page[];
   activePageId: string;
-  onSelectPage: (pageId: string) => void;
+  onSelectPage: (id: string) => void;
 };
 
 export default function PreviewSidebar({
@@ -16,42 +16,46 @@ export default function PreviewSidebar({
   activePageId,
   onSelectPage,
 }: Props) {
-  const grouped = pages.reduce<Record<string, Page[]>>((acc, page) => {
-    const key = page.categoryId ?? 'uncategorized';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(page);
+  const grouped = pages.reduce<
+    Record<string, Record<string, Page[]>>
+  >((acc, page) => {
+    const cat = page.categoryId ?? 'Uncategorized';
+    const sub = page.subcategoryId ?? 'Uncategorized';
+
+    acc[cat] ??= {};
+    acc[cat][sub] ??= [];
+    acc[cat][sub].push(page);
+
     return acc;
   }, {});
 
   return (
     <aside className="w-64 border-r bg-white p-4 overflow-y-auto">
-      <div className="font-semibold mb-4">Categories</div>
+      {Object.entries(grouped).map(([cat, subs]) => (
+        <div key={cat} className="mb-4">
+          <div className="font-semibold mb-1">{cat}</div>
 
-      {Object.entries(grouped).map(([categoryId, pages]) => (
-        <div key={categoryId} className="mb-4">
-          <div className="text-sm font-medium text-gray-700 mb-2">
-            {categoryId === 'uncategorized'
-              ? 'Uncategorized'
-              : `Category ${categoryId}`}
-          </div>
+          {Object.entries(subs).map(([sub, pages]) => (
+            <div key={sub} className="ml-3 mb-2">
+              <div className="text-xs text-gray-500 mb-1">
+                {sub}
+              </div>
 
-          <div className="space-y-1">
-            {pages.map((p) => (
-              <button
-                key={p.id}
-                disabled={p.id !== activePageId}
-                onClick={() => onSelectPage(p.id)}
-                className={`w-full text-left px-2 py-1 rounded text-sm
-                  ${
+              {pages.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => onSelectPage(p.id)}
+                  className={`block w-full text-left px-2 py-1 text-sm rounded ${
                     p.id === activePageId
                       ? 'bg-black text-white'
-                      : 'hover:bg-gray-100 opacity-50 cursor-not-allowed'
+                      : 'hover:bg-gray-100'
                   }`}
-              >
-                {p.name ?? 'Untitled Page'}
-              </button>
-            ))}
-          </div>
+                >
+                  {p.name ?? 'Untitled'}
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       ))}
     </aside>
