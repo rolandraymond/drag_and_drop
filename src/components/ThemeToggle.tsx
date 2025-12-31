@@ -1,18 +1,15 @@
 import { useEffect, useState } from 'react';
-import { getSavedTheme, toggleTheme } from '../theme'; // استيراد الدوال من theme.ts
+import { getSavedTheme, toggleTheme } from '../theme';
 
 export default function ThemeToggle() {
-  const [mode, setMode] = useState<'light' | 'dark'>('light'); // تخزين الوضع في الـ state
-
-  // تحميل الوضع المحفوظ عند تحميل الصفحة
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
   useEffect(() => {
-    setMode(getSavedTheme()); // جلب الوضع المحفوظ
+    setMode(getSavedTheme());
   }, []);
 
-  // دالة لتبديل الوضع عند الضغط على الزر
   const handleToggle = () => {
-    const next = toggleTheme(); // تبديل الوضع
-    setMode(next); // تحديث الوضع في الـ state
+    const next = toggleTheme(); /
+    setMode(next); 
   };
 
   return (
