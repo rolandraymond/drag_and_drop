@@ -38,17 +38,23 @@ export interface PageSchema {
 export type EditorPage = {
   id: string;
   name?: string;
-  categoryId: string;
-  subcategoryId: string;
+
+  categoryId: string | null;
+  categoryName?: string | null;
+
+  subcategoryId: string | null;
+  subcategoryName?: string | null;
+
+  description?: string;
+  author?: string;
+
   elements: EditorElement[];
 };
-
 
 export interface InputElement extends BaseElement {
   type: 'input';
   label?: string;
   placeholder?: string;
 }
-
 
 export type EditorElement = TextElement | QuestionElement | ImageQuestionElement | InputElement;

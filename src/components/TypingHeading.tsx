@@ -1,46 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TypingHeadingProps {
   text: string;
 }
 
-const TypingHeading: React.FC<TypingHeadingProps> = ({ text }) => {
+export default function TypingHeading({ text }: TypingHeadingProps) {
   const [displayedText, setDisplayedText] = useState('');
   const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
     let index = 0;
-    let timeoutId: number;
+    let typingTimer: number | undefined;
 
-    const startTyping = () => {
+    setDisplayedText('');
+
+    const typeNextChar = () => {
+      index += 1;
+      setDisplayedText(text.slice(0, index));
+
       if (index < text.length) {
-        setDisplayedText(text.slice(0, index + 1));
-        index++;
-        const delay = Math.random() * (70 - 40) + 40;
-        timeoutId = setTimeout(startTyping, delay);
+        const delay = Math.floor(Math.random() * 30) + 40;
+        typingTimer = window.setTimeout(typeNextChar, delay);
       }
     };
 
-    const initialDelay = setTimeout(startTyping, 500);
-
-    const cursorInterval = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 500);
+    typingTimer = window.setTimeout(typeNextChar, 500);
 
     return () => {
-      clearTimeout(initialDelay);
-      clearTimeout(timeoutId);
-      clearInterval(cursorInterval);
+      if (typingTimer) clearTimeout(typingTimer);
     };
   }, [text]);
 
+  useEffect(() => {
+    const cursorTimer = window.setInterval(() => {
+      setShowCursor((v) => !v);
+    }, 500);
+
+    return () => clearInterval(cursorTimer);
+  }, []);
 
   return (
-    <span className="inline-block">
+    <span className='inline-flex items-center font-mono'>
       {displayedText}
-      <span className={`ml-1 ${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity`}>|</span>
+      <span
+        className={`ml-1 transition-opacity duration-150 ${
+          showCursor ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        |
+      </span>
     </span>
   );
-};
-
-export default TypingHeading;
+}

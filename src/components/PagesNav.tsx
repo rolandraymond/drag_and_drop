@@ -9,7 +9,7 @@ export default function PagesNav() {
 
   const setActivePage = useEditorStore((s) => s.setActivePage);
   const addPage = useEditorStore((s) => s.addPage);
-  const addInputPage = useEditorStore((s) => s.addInputPage);
+  const addElement = useEditorStore((s) => s.addElement);
   const renamePage = useEditorStore((s) => s.renamePage);
   const deletePage = useEditorStore((s) => s.deletePage);
 
@@ -22,7 +22,7 @@ export default function PagesNav() {
       <div className='flex items-center gap-2 border-b bg-gray-50 px-4 py-2 overflow-x-auto'>
         {pages.map((page, index) => {
           const isActive = page.id === activePageId;
-          const displayName = page.name?.trim() ? page.name : `Page ${index + 1}`;
+          const displayName = page.name?.trim() || `Page ${index + 1}`;
 
           return (
             <div key={page.id} className='flex items-center gap-1'>
@@ -78,7 +78,7 @@ export default function PagesNav() {
         </button>
 
         <button
-          onClick={addInputPage}
+          onClick={() => addElement('input')}
           className='px-3 py-1 text-sm border rounded hover:bg-gray-100'
         >
           + Input

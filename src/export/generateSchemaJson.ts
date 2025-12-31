@@ -1,8 +1,24 @@
 import type { EditorElement } from '../types/editor';
 
-export type PageSchemaV1 = {
-  version: 1;
+/* ================= Schema Types ================= */
+
+export type PageSchemaV2 = {
+  version: 2;
+
   title: string;
+  description?: string;
+  author?: string;
+
+  category?: {
+    id: string | null;
+    name?: string | null;
+  };
+
+  subcategory?: {
+    id: string | null;
+    name?: string | null;
+  };
+
   elements: Array<
     | { id: string; type: 'text'; value: string }
     | {
@@ -22,19 +38,57 @@ export type PageSchemaV1 = {
   >;
 };
 
+/* ================= Helpers ================= */
+
 function cleanText(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+/* ================= Generator ================= */
+
+type SchemaOptions = {
+  title?: string;
+  description?: string;
+  author?: string;
+
+  category?: {
+    id: string | null;
+    name?: string | null;
+  };
+
+  subcategory?: {
+    id: string | null;
+    name?: string | null;
+  };
+};
+
 export function generateSchemaJson(
   elements: EditorElement[],
-  opts?: { title?: string },
-): PageSchemaV1 {
+  opts: SchemaOptions = {},
+): PageSchemaV2 {
   return {
-    version: 1,
-    title: cleanText(opts?.title) || 'Generated Page',
+    version: 2,
+
+    title: cleanText(opts.title) || 'Generated Page',
+    description: cleanText(opts.description),
+    author: cleanText(opts.author),
+
+    category: opts.category
+      ? {
+          id: opts.category.id,
+          name: cleanText(opts.category.name),
+        }
+      : undefined,
+
+    subcategory: opts.subcategory
+      ? {
+          id: opts.subcategory.id,
+          name: cleanText(opts.subcategory.name),
+        }
+      : undefined,
+
     elements: elements.map((el) => {
-      // TEXT
+      /* ---------- TEXT ---------- */
       if (el.type === 'text') {
         return {
           id: el.id,
@@ -42,7 +96,8 @@ export function generateSchemaJson(
           value: cleanText(el.value),
         };
       }
-      // INPUT
+
+      /* ---------- INPUT ---------- */
       if (el.type === 'input') {
         return {
           id: el.id,
@@ -52,7 +107,7 @@ export function generateSchemaJson(
         };
       }
 
-      // QUESTION & IMAGE QUESTION
+      /* ---------- QUESTION / IMAGE QUESTION ---------- */
       const correct_answers = el.answer ? [cleanText(el.answer)] : [];
 
       const base = {

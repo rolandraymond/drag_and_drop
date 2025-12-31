@@ -4,37 +4,44 @@ import type { EditorElement, ElementType } from '../types/editor';
 import type { PageMeta } from '../types/schema';
 import { uid } from '../utils/uid';
 
+/* ================= types ================= */
+
 type Page = {
   id: string;
-  name?: string;
-  elements: EditorElement[];
-  categoryId: string | null;
-  subcategoryId: string | null;
-};
 
+  name?: string;
+  description?: string;
+  author?: string;
+
+  categoryId: string | null;
+  categoryName?: string | null;
+
+  subcategoryId: string | null;
+  subcategoryName?: string | null;
+
+  elements: EditorElement[];
+};
 
 interface EditorStore {
   pages: Page[];
   activePageId: string;
-  setPageCategory: (pageId: string, categoryId: string | null) => void;
-  setPageSubcategory: (pageId: string, subcategoryId: string | null) => void;
-
-
-
-
-  
 
   meta: PageMeta;
   setMeta: (meta: Partial<PageMeta>) => void;
 
   setActivePage: (pageId: string) => void;
   addPage: () => void;
-  
   renamePage: (pageId: string, name: string) => void;
   deletePage: (pageId: string) => void;
 
-  addElement: (type: ElementType) => void;
+  setPageCategory: (pageId: string, payload: { id: string | null; name?: string | null }) => void;
 
+  setPageSubcategory: (
+    pageId: string,
+    payload: { id: string | null; name?: string | null },
+  ) => void;
+
+  addElement: (type: ElementType) => void;
   reorderElements: (activeId: string, overId: string) => void;
   deleteElement: (id: string) => void;
   clearAll: () => void;
@@ -43,39 +50,11 @@ interface EditorStore {
   updateQuestion: (id: string, value: string) => void;
   updateAnswer: (id: string, value: string) => void;
   updateImageQuestionImage: (id: string, image: string) => void;
-
   updateInputLabel: (id: string, value: string) => void;
   updateInputPlaceholder: (id: string, value: string) => void;
 }
 
-function createElement(type: ElementType): EditorElement {
-  if (type === 'imageQuestion') {
-    return { id: uid(), type, x: 0, y: 0, image: '', question: '', answer: '' };
-  }
-
-  if (type === 'question') {
-    return { id: uid(), type, x: 0, y: 0, question: '', answer: '' };
-  }
-
-  if (type === 'input') {
-    return {
-      id: uid(),
-      type,
-      x: 0,
-      y: 0,
-      label: 'Input',
-      placeholder: 'Type here...',
-    };
-  }
-
-  return {
-    id: uid(),
-    type: 'text',
-    x: 0,
-    y: 0,
-    value: 'New Text',
-  };
-}
+/* ================= store ================= */
 
 export const useEditorStore = create<EditorStore>()(
   persist(
@@ -84,16 +63,20 @@ export const useEditorStore = create<EditorStore>()(
         {
           id: 'page-1',
           name: 'Page 1',
-          elements: [],
+          description: '',
+          author: '',
+
           categoryId: null,
+          categoryName: null,
+
           subcategoryId: null,
+          subcategoryName: null,
+
+          elements: [],
         },
       ],
 
       activePageId: 'page-1',
-    
-
-      
 
       meta: {
         name: 'Untitled Quiz',
@@ -101,6 +84,8 @@ export const useEditorStore = create<EditorStore>()(
         author: '',
         createdAt: Date.now(),
       },
+
+      /* ================= meta ================= */
 
       setMeta: (partial) =>
         set((state) => ({
@@ -110,12 +95,12 @@ export const useEditorStore = create<EditorStore>()(
           },
         })),
 
+      /* ================= pages ================= */
+
       setActivePage: (pageId) => set({ activePageId: pageId }),
 
       addPage: () =>
         set((state) => {
-          
-
           const id = uid();
           const pageNumber = state.pages.length + 1;
 
@@ -125,17 +110,18 @@ export const useEditorStore = create<EditorStore>()(
               {
                 id,
                 name: `Page ${pageNumber}`,
+                description: '',
+                author: '',
                 categoryId: null,
+                categoryName: null,
                 subcategoryId: null,
+                subcategoryName: null,
                 elements: [],
               },
             ],
             activePageId: id,
           };
         }),
-
-
-
 
       renamePage: (pageId, name) =>
         set((state) => ({
@@ -153,31 +139,90 @@ export const useEditorStore = create<EditorStore>()(
 
           return { pages, activePageId };
         }),
-        setPageCategory: (pageId, categoryId) =>
+
+      /* ================= category ================= */
+
+      setPageCategory: (pageId, payload) =>
         set((state) => ({
           pages: state.pages.map((p) =>
             p.id === pageId
-              ? { ...p, categoryId, subcategoryId: null }
-              : p
-          ),
-        })),
-
-      setPageSubcategory: (pageId, subcategoryId) =>
-        set((state) => ({
-          pages: state.pages.map((p) =>
-            p.id === pageId ? { ...p, subcategoryId } : p
-          ),
-        })),
-      addElement: (type) =>
-        set((state) => ({
-          pages: state.pages.map((p) =>
-            p.id === state.activePageId
-              ? { ...p, elements: [...p.elements, createElement(type)] }
+              ? {
+                  ...p,
+                  categoryId: payload.id,
+                  categoryName: payload.name ?? null,
+                  subcategoryId: null,
+                  subcategoryName: null,
+                }
               : p,
           ),
         })),
-      
 
+      setPageSubcategory: (pageId, payload) =>
+        set((state) => ({
+          pages: state.pages.map((p) =>
+            p.id === pageId
+              ? {
+                  ...p,
+                  subcategoryId: payload.id,
+                  subcategoryName: payload.name ?? null,
+                }
+              : p,
+          ),
+        })),
+
+      /* ================= elements ================= */
+
+      addElement: (type) =>
+        set((state) => ({
+          pages: state.pages.map((p) => {
+            if (p.id !== state.activePageId) return p;
+
+            let element: EditorElement;
+
+            if (type === 'imageQuestion') {
+              element = {
+                id: uid(),
+                type,
+                x: 0,
+                y: 0,
+                image: '',
+                question: '',
+                answer: '',
+              };
+            } else if (type === 'question') {
+              element = {
+                id: uid(),
+                type,
+                x: 0,
+                y: 0,
+                question: '',
+                answer: '',
+              };
+            } else if (type === 'input') {
+              element = {
+                id: uid(),
+                type,
+                x: 0,
+                y: 0,
+                label: 'Input',
+                placeholder: 'Type here...',
+              };
+            } else {
+              element = {
+                id: uid(),
+                type: 'text',
+                x: 0,
+                y: 0,
+                value: 'New Text',
+              };
+            }
+
+            return {
+              ...p,
+              elements: [...p.elements, element],
+            };
+          }),
+        })),
 
       reorderElements: (activeId, overId) =>
         set((state) => ({
@@ -209,6 +254,8 @@ export const useEditorStore = create<EditorStore>()(
         set((state) => ({
           pages: state.pages.map((p) => (p.id === state.activePageId ? { ...p, elements: [] } : p)),
         })),
+
+      /* ================= updates ================= */
 
       updateText: (id, value) =>
         set((state) => ({
